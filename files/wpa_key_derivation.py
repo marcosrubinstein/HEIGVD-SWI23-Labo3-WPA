@@ -51,8 +51,8 @@ fourWayHandshake = wpa.filter(
     lambda pkt: pkt if pkt.haslayer(EAPOL) and pkt.getlayer(EAPOL).type == 3 else None
 )
 
-APmac = fourWayHandshake[3].addr1
-Clientmac = fourWayHandshake[3].addr2
+APmac = fourWayHandshake[3].addr1.encode()
+Clientmac = fourWayHandshake[3].addr2.encode()
 
 # Important parameters for key derivation - most of them can be obtained from the pcap file
 passPhrase = "actuelle"
@@ -87,7 +87,6 @@ print("Client Nonce: ", b2a_hex(SNonce), "\n")
 
 # calculate 4096 rounds to obtain the 256 bit (32 oct) PMK
 passPhrase = str.encode(passPhrase)
-ssid = str.encode(ssid)
 pmk = pbkdf2(hashlib.sha1, passPhrase, ssid, 4096, 32)
 
 # expand pmk to obtain PTK
