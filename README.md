@@ -35,10 +35,34 @@ et de garder la fenêtre d'airodump ouverte en permanence pendant que vos script
 Dans cette première partie, vous allez récupérer le script **Python3** [wpa\_key\_derivation.py](files/wpa_key_derivation.py). Il vous faudra également le fichier de capture [wpa\_handshake.cap](files/wpa_handshake.cap) contenant un processus d’authentification WPA. Vous aurez aussi besoin du fichier [pbkdf2.py](files/pbkdf2.py), qui permet de calculer les 4096 tours pour le hash de la passphrase. Tous ces fichiers doivent être copiés dans le même répertoire local sur vos machines.
 
 - Ouvrir le fichier de capture [wpa\_handshake.cap](files/wpa_handshake.cap) avec Wireshark
+
 - Exécuter le script avec ```python3 wpa_key_derivation.py```
+
+  > ![](img/1.2_script_output.png)
+
 - Essayer d’identifier les valeurs affichées par le script dans la capture Wireshark
+
+  > Au niveau de la couche MAC de n'importe quel paquet, on retrouve les adresses MAC du client et de l'AP.
+  >
+  > Le paquet 1 est un beacon émis par l'AP. On retrouve dans celui-ci le SSID.
+  >
+  > Les paquets 2 et 3 sont l'authentification Open System. On remarque que nous avons d'abord capturé la confirmation envoyée par l'AP avant la requête d'authentification envoyée par le client. Ceci est certainement dû à une erreur lors du nettoyage de la trace initiale.
+  >
+  > Les paquets 4 et 5 sont l'association.
+  >
+  > Les paquets 6-9 sont l'échange de clés WPA.
+  >
+  > - Dans le paquet 6, on retrouve le nonce de l'AP
+  >
+  > - Dans le paquet 7, on retrouve le nonce du client
+
 - Analyser le fonctionnement du script. En particulier, __faire attention__ à la variable ```data``` qui contient la payload de la trame et la comparer aux données de la quatrième trame du 4-way handshake. Lire [la fin de ce document](#quelques-éléments-à-considérer-) pour l’explication de la différence.
+
+  > `def customPRF512(key,A,B):` est la fonction utilisée pour passer de la Pairwise Master Key (PMK) à la Pairwise Transient Key (PTK)
+
 - __Modifier le script__ pour qu’il récupère automatiquement, à partir de la capture, les valeurs qui se trouvent actuellement codées en dur (```ssid```, ```APmac```, ```Clientmac```, nonces…) 
+
+  > 
 
 
 ### 2. Scaircrack (aircrack basé sur Scapy)
