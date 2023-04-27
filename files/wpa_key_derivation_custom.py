@@ -41,12 +41,8 @@ def customPRF512(key,A,B):
 wpa=rdpcap("wpa_handshake.cap") 
 
 print("ici")
-# Extract the EAPOL layer
-eapol_layer = wpa[5].getlayer(scapy.layers.eap.EAPOL_KEY) ## STOP ICI LE 20.04. çA FONCTIONNE PAS KEK
 
 
-
-print(eapol_layer)
 print("fin")
 
 # Important parameters for key derivation - most of them can be obtained from the pcap file
@@ -57,8 +53,8 @@ APmac       = a2b_hex(wpa[0].addr2.replace(":","")) ###### A COMMENTER
 Clientmac   = a2b_hex(wpa[1].addr1.replace(":","")) ###### A COMMENTER
 
 # Authenticator and Supplicant Nonces
-ANonce      = a2b_hex("90773b9a9661fee1f406e8989c912b45b029c652224e8b561417672ca7e0fd91")
-SNonce      = a2b_hex("7b3826876d14ff301aee7c1072b5e9091e21169841bce9ae8a3f24628f264577")
+ANonce      = a2b_hex(wpa[5][EAPOL].load[13:45].hex()) ###### A COMMENTER
+SNonce      = a2b_hex(bytes(wpa[6])[65:97].hex()) ######### A COMMENTER
 
 # This is the MIC contained in the 4th frame of the 4-way handshake
 # When attacking WPA, we would compare it to our own MIC calculated using passphrases from a dictionary
