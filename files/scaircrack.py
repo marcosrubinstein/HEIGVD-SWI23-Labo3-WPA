@@ -37,7 +37,7 @@ def get_passphrases(file):
     return passphrases
 
 
-def collect_infos_from_pcap(pcapfile):
+def collect_infos_from_pcap(pcapfile, constructor_mac_prefix=""):
     """
     This function parses a pcap file and returns the following parameters:
     - APmac
@@ -50,10 +50,22 @@ def collect_infos_from_pcap(pcapfile):
     wpa = rdpcap(pcapfile)
 
     # identify where is the first packet of the 4-way handshake
+    # identify where are the first packet of the 4-way handshake
     for i in range(0, len(wpa)):
         if wpa[i].type == 2 and wpa[i].subtype == 8:
-            if wpa[i][EAPOL].type == 3:
-                break
+            try:
+                if wpa[i][EAPOL].type == 3:
+
+                    if (constructor_mac_prefix == ""):
+                        break
+
+                    #check MAC of the AP to keep only the 4-way handshake related to the constructor selected
+                    if (str(wpa[i].addr1).startswith(constructor_mac_prefix)):
+                        print(i)
+                        break
+                        
+            except:
+                pass
 
     if (i == len(wpa)):
         print("No 4-way handshake found in the pcap file")
@@ -62,6 +74,7 @@ def collect_infos_from_pcap(pcapfile):
     # sync indexes to the first packet of the 4-way handshake
     i = i - 1
 
+    print(wpa[i].summary())
     # retrieve APmac and clientmac from the first packet of the 4-way handshake
     APmac = a2b_hex(wpa[i].addr2.replace(":", ""))
     Clientmac = a2b_hex(wpa[i].addr1.replace(":", ""))
