@@ -51,8 +51,9 @@ fourWayHandshake = wpa.filter(
     lambda pkt: pkt if pkt.haslayer(EAPOL) and pkt.getlayer(EAPOL).type == 3 else None
 )
 
-APmac = fourWayHandshake[3].addr1.encode()
-Clientmac = fourWayHandshake[3].addr2.encode()
+APmac = a2b_hex(fourWayHandshake[3].addr1.replace(":", ""))
+Clientmac = a2b_hex(fourWayHandshake[3].addr2.replace(":", ""))
+
 
 # Important parameters for key derivation - most of them can be obtained from the pcap file
 passPhrase = "actuelle"
