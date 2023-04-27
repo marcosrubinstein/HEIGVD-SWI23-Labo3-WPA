@@ -4,7 +4,7 @@
 """
 Scaircrack
 
-Script to test multiple passwords from a file, creates a MIC with it and compares it with the one retrieve in the last packet of the 4-way handshake.
+Script to test multiple passwords from a file, creates a MIC with each password and compares it with the one retrieved in the last packet of the 4-way handshake.
 """
 
 __author__      = "Abraham Rubinstein et Yann Lederrey"
