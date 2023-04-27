@@ -52,7 +52,7 @@ SNonce      = a2b_hex(bytes(wpa[6])[65:97].hex()) ######### A COMMENTER
 
 # This is the MIC contained in the 4th frame of the 4-way handshake
 # When attacking WPA, we would compare it to our own MIC calculated using passphrases from a dictionary
-mic_to_test = wpa[8].original[-18:-2]
+mic_to_test = wpa[8].original[-18:-2].hex()
 
 B           = min(APmac,Clientmac)+max(APmac,Clientmac)+min(ANonce,SNonce)+max(ANonce,SNonce) #used in pseudo-random function
 
