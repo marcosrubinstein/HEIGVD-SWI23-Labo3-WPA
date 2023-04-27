@@ -3,7 +3,6 @@
 
 """
 Derive WPA keys from Passphrase and 4-way handshake info
-
 Calcule un MIC d'authentification (le MIC pour la transmission de données
 utilise l'algorithme Michael. Dans ce cas-ci, l'authentification, on utilise
 sha-1 pour WPA2 ou MD5 pour WPA)
@@ -40,11 +39,6 @@ def customPRF512(key,A,B):
 # Read capture file -- it contains beacon, authentication, associacion, handshake and data
 wpa=rdpcap("wpa_handshake.cap") 
 
-print("ici")
-
-
-print("fin")
-
 # Important parameters for key derivation - most of them can be obtained from the pcap file
 passPhrase  = "actuelle"
 A           = "Pairwise key expansion" #this string is used in the pseudo-random function
@@ -58,11 +52,11 @@ SNonce      = a2b_hex(bytes(wpa[6])[65:97].hex()) ######### A COMMENTER
 
 # This is the MIC contained in the 4th frame of the 4-way handshake
 # When attacking WPA, we would compare it to our own MIC calculated using passphrases from a dictionary
-mic_to_test = "36eef66540fa801ceee2fea9b7929b40"
+mic_to_test = wpa[8].original[-18:-2]
 
 B           = min(APmac,Clientmac)+max(APmac,Clientmac)+min(ANonce,SNonce)+max(ANonce,SNonce) #used in pseudo-random function
 
-data        = a2b_hex("0103005f02030a0000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000") #cf "Quelques détails importants" dans la donnée
+data        = wpa[8].original[48:-18] + b'\0' * 16 + wpa[8].original[-2:]
 
 print ("\n\nValues used to derivate keys")
 print ("============================")
