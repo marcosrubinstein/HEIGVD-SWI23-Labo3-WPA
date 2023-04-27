@@ -51,22 +51,20 @@ fourWayHandshake = wpa.filter(
     lambda pkt: pkt if pkt.haslayer(EAPOL) and pkt.getlayer(EAPOL).type == 3 else None
 )
 
-fourWayHandshake[3]  # TODO: get MACs
+APmac = fourWayHandshake[3].addr1
+Clientmac = fourWayHandshake[3].addr2
 
 # Important parameters for key derivation - most of them can be obtained from the pcap file
 passPhrase = "actuelle"
 A = "Pairwise key expansion"  # this string is used in the pseudo-random function
-ssid = "SWI"
-APmac = a2b_hex("cebcc8fdcab7")
-Clientmac = a2b_hex("0013efd015bd")
 
 # Authenticator and Supplicant Nonces
-ANonce = a2b_hex("90773b9a9661fee1f406e8989c912b45b029c652224e8b561417672ca7e0fd91")
-SNonce = a2b_hex("7b3826876d14ff301aee7c1072b5e9091e21169841bce9ae8a3f24628f264577")
+ANonce = fourWayHandshake[0].load[13:13+32]
+SNonce = fourWayHandshake[1].load[13:13+32]
 
 # This is the MIC contained in the 4th frame of the 4-way handshake
 # When attacking WPA, we would compare it to our own MIC calculated using passphrases from a dictionary
-mic_to_test = "36eef66540fa801ceee2fea9b7929b40"
+mic_to_test = fourWayHandshake[3].load[77:77+16]
 
 B = (
     min(APmac, Clientmac)
@@ -75,9 +73,8 @@ B = (
     + max(ANonce, SNonce)
 )  # used in pseudo-random function
 
-data = a2b_hex(
-    "0103005f02030a0000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-)  # cf "Quelques détails importants" dans la donnée
+eapol = fourWayHandshake[3].getlayer(EAPOL)
+data = eapol.version.to_bytes(1, 'big') + eapol.type.to_bytes(1, 'big') + eapol.len.to_bytes(2, 'big') + eapol.load[:77] + b'\x00'*18
 
 print("\n\nValues used to derivate keys")
 print("============================")
