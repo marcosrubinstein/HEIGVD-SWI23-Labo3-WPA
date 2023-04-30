@@ -5,6 +5,9 @@
 Authors: Thomann Yanick, Galley David, Gachet Jean
 Date: 27/04/2023
 
+https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/WiFi-WPA/probable-v2-wpa-top4800.txt
+Note: added "actuelle" in 1500th place.
+
 Derive WPA keys from Passphrase and 4-way handshake info
 
 Calcule un MIC d'authentification (le MIC pour la transmission de données
@@ -17,49 +20,6 @@ import hmac
 from binascii import a2b_hex, b2a_hex
 from scapy.all import *
 from pbkdf2 import *
-
-
-# Custom class to store the SSID and MAC address of an AP
-class SSIDInfo(NamedTuple):
-    ssid: str
-    mac_address: str
-
-
-# Function used to get APs from a pcap capture
-def find_ssid(pcap_file):
-    # Initialize and empty dictionary to contain APs
-    ssids = {}
-    # Read all packets in capture
-    packets = rdpcap(pcap_file)
-    # Iterate over all packets in capture
-    for packet in packets:
-        # If the packet is a 802.11 beacon
-        if packet.haslayer(Dot11AssoReq):  # TODO AssoReq better than Beacon ?
-            # Retrieve the SSID
-            ssid = packet[Dot11Elt].info.decode()
-            # Add AP to dict if not seen before
-            if ssid not in ssids:
-                ssids[ssid] = packet.addr3  # TODO addr3 better than addr2 for Beacon (since it's a management frame) ?
-    # If there is only one AP found, return its SSID and MAC in an SSIDInfo object
-    if len(ssids) == 1:
-        ssid, mac = next(iter(ssids.items()))
-        return SSIDInfo(ssid=ssid, mac_address=mac)
-    # If there are multiple, ask user to choose and return the chosen one
-    elif len(ssids) > 1:
-        ssid_infos = []
-        for ssid, mac in ssids.items():
-            ssid_infos.append(SSIDInfo(ssid=ssid, mac_address=mac))
-        print("Multiple SSIDs found:")
-        for ssid_info in ssid_infos:
-            print(f"SSID: {ssid_info.ssid} | MAC Address: {ssid_info.mac_address}")
-        chosen_ssid = input("Please choose an SSID by typing its name: ")
-        while chosen_ssid not in ssids:
-            chosen_ssid = input("Invalid choice. Please choose an SSID by typing its name: ")
-        mac = ssids[chosen_ssid]
-        return SSIDInfo(ssid=chosen_ssid, mac_address=mac)
-    else:
-        print("No AP found in capture, exiting...")
-        exit()
 
 
 def get_next_line_from_file(filename):
@@ -87,11 +47,6 @@ def custom_prf512(key, A, B):
 
 if __name__ == '__main__':
 
-    hmac.HMAC
-
-    ssid_info = find_ssid("wpa_handshake.cap")
-    print(ssid_info)
-
     # Read capture file -- it contains beacon, authentication, association, handshake and data
     wpa = rdpcap("wpa_handshake.cap")
 
@@ -115,7 +70,8 @@ if __name__ == '__main__':
     # TODO get from cap ?
     data = a2b_hex("0103005f02030a0000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")  # cf "Quelques détails importants" dans la donnée
 
-    for passphrase in get_next_line_from_file("passphrases.txt"):
+    passphrases_filename = "probable-v2-wpa-top4800.txt"
+    for passphrase in get_next_line_from_file(passphrases_filename):
         # derives the PMK and then the PTK
         pmk = pbkdf2(hashlib.sha1, str.encode(passphrase), ssid, 4096, 32)
         ptk = custom_prf512(pmk, a, b)
@@ -124,7 +80,10 @@ if __name__ == '__main__':
         kck = ptk[0:16]
 
         # calculate MIC over EAPOL payload (Michael)
-        mic = hmac.new(kck, data, hashlib.sha1)
+        # as seen with the assistant, the output of hmac here is too large, taking only the first 32 bytes
+        mic = hmac.new(kck, data, hashlib.sha1).hexdigest()[0:32]
         if mic == mic_to_test:
-            print(passphrase)
-            break
+            print("The passphrase for \"{}\" is: {}".format(ssid.decode(), passphrase))
+            exit()
+
+    print("The passphrase for \"{}\" was not found in the file.".format(ssid.decode()))
