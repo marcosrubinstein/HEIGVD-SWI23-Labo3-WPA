@@ -59,10 +59,12 @@ Dans cette première partie, vous allez récupérer le script **Python3** [wpa\_
 - Analyser le fonctionnement du script. En particulier, __faire attention__ à la variable ```data``` qui contient la payload de la trame et la comparer aux données de la quatrième trame du 4-way handshake. Lire [la fin de ce document](#quelques-éléments-à-considérer-) pour l’explication de la différence.
 
   > `def customPRF512(key,A,B):` est la fonction utilisée pour passer de la Pairwise Master Key (PMK) à la Pairwise Transient Key (PTK)
+  >
+  > // TODO
 
 - __Modifier le script__ pour qu’il récupère automatiquement, à partir de la capture, les valeurs qui se trouvent actuellement codées en dur (```ssid```, ```APmac```, ```Clientmac```, nonces…) 
 
-  > 
+  > Voir repo, script 1_wpa_key_derivation.py
 
 
 ### 2. Scaircrack (aircrack basé sur Scapy)
@@ -92,6 +94,8 @@ Voici ce que vous devez faire pour cette partie :
 
 - __Modifier votre script WPA__ pour qu’il récupère automatiquement, à partir de la capture, la valeur de la PMKID
 - Vous aurez aussi besoin de récupérer les valeurs du ```ssid```, ```APmac``` et ```Clientmac``` (ceci est normalement déjà fait par votre script) 
+
+> Voir repo, script 3_wpa_key_derivation.py
 
 
 #### 3.2. Cracker la Passphrase utilisant l'attaque PMKID

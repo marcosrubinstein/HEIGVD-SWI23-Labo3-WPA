@@ -44,7 +44,7 @@ class AP(NamedTuple):
 
 # Function used to get APs from a pcap capture
 def find_ssid(pcap):
-    # Initialize and empty dictionnary to contain APs
+    # Initialize and empty dictionary to contain APs
     ssids = {}
     # Iterate over all packets in capture
     for packet in pcap:
@@ -65,16 +65,18 @@ def find_ssid(pcap):
         for ssid, mac in ssids.items():
             ssid_infos.append(AP(ssid=ssid, mac_address=mac))
         print("Multiple SSIDs found:")
-        for ssid_info in ssid_infos:
-            print(f"SSID: {ssid_info.ssid} | MAC Address: {ssid_info.mac_address}")
-        chosen_ssid = input("Please choose an SSID by typing its name: ")
-        while chosen_ssid not in ssids:
-            chosen_ssid = input("Invalid choice. Please choose an SSID by typing its name: ")
+        for i, ssid_info in enumerate(ssid_infos):
+            print(f"{i}: SSID: {ssid_info.ssid} | MAC Address: {ssid_info.mac_address}")
+        chosen_ssid_index = input("Please choose an SSID by typing its index: ")
+        while not chosen_ssid_index.isdigit() or int(chosen_ssid_index) not in range(len(ssids)):
+            chosen_ssid_index = input("Invalid choice. Please choose an SSID by typing its index: ")
+        chosen_ssid = ssid_infos[int(chosen_ssid_index)].ssid
         mac = ssids[chosen_ssid]
         return AP(ssid=chosen_ssid, mac_address=mac)
     else:
         print("No AP found in capture, exiting...")
         exit()
+
 # Function used to get wifi clients from a wireshark capture
 def get_wifi_clients(pcap):
     # Initialize and empty dictionnary to contain clients
@@ -107,6 +109,7 @@ def get_wifi_clients(pcap):
     else:
         print("No WiFi clients found, exiting...")
         exit()
+
 # Function used to retrieve WPA nonces from a wireshark capture
 def get_wpa_nonce(pcap, mac):
     for packet in pcap:
@@ -117,7 +120,9 @@ def get_wpa_nonce(pcap, mac):
             nonce = key_data[13:45].hex()
             return nonce
     # if no WPA nonce is found, return None
-    return None
+    print("Nonce not found in packets")
+    exit()
+
 # Function used to retrieve the MIC of the 4th packet of the 4-way handshake
 def get_wpa_mic(pcap_file, client_mac, ap_mac):
     packets = rdpcap(pcap_file)  # read in pcap file
@@ -133,7 +138,8 @@ def get_wpa_mic(pcap_file, client_mac, ap_mac):
             mic = key_data[-18:-2].hex()
             return mic
     # if no WPA MIC is found, return None
-    return None
+    print("MIC not found, maybe there is no 4-way handshake ?")
+    exit()
 
 # Read capture file -- it contains beacon, authentication, associacion, handshake and data
 wpa=rdpcap("wpa_handshake.cap") 
