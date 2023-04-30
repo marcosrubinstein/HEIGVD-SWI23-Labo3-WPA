@@ -19,9 +19,47 @@ from scapy.all import *
 from pbkdf2 import *
 
 
-def string_to_bytes(input_string):
-    output_bytes = input_string.encode('utf-8')
-    return output_bytes
+# Custom class to store the SSID and MAC address of an AP
+class SSIDInfo(NamedTuple):
+    ssid: str
+    mac_address: str
+
+
+# Function used to get APs from a pcap capture
+def find_ssid(pcap_file):
+    # Initialize and empty dictionary to contain APs
+    ssids = {}
+    # Read all packets in capture
+    packets = rdpcap(pcap_file)
+    # Iterate over all packets in capture
+    for packet in packets:
+        # If the packet is a 802.11 beacon
+        if packet.haslayer(Dot11AssoReq):  # TODO AssoReq better than Beacon ?
+            # Retrieve the SSID
+            ssid = packet[Dot11Elt].info.decode()
+            # Add AP to dict if not seen before
+            if ssid not in ssids:
+                ssids[ssid] = packet.addr3  # TODO addr3 better than addr2 for Beacon (since it's a management frame) ?
+    # If there is only one AP found, return its SSID and MAC in an SSIDInfo object
+    if len(ssids) == 1:
+        ssid, mac = next(iter(ssids.items()))
+        return SSIDInfo(ssid=ssid, mac_address=mac)
+    # If there are multiple, ask user to choose and return the chosen one
+    elif len(ssids) > 1:
+        ssid_infos = []
+        for ssid, mac in ssids.items():
+            ssid_infos.append(SSIDInfo(ssid=ssid, mac_address=mac))
+        print("Multiple SSIDs found:")
+        for ssid_info in ssid_infos:
+            print(f"SSID: {ssid_info.ssid} | MAC Address: {ssid_info.mac_address}")
+        chosen_ssid = input("Please choose an SSID by typing its name: ")
+        while chosen_ssid not in ssids:
+            chosen_ssid = input("Invalid choice. Please choose an SSID by typing its name: ")
+        mac = ssids[chosen_ssid]
+        return SSIDInfo(ssid=chosen_ssid, mac_address=mac)
+    else:
+        print("No AP found in capture, exiting...")
+        exit()
 
 
 def get_next_line_from_file(filename):
@@ -48,6 +86,11 @@ def custom_prf512(key, A, B):
 
 
 if __name__ == '__main__':
+
+    hmac.HMAC
+
+    ssid_info = find_ssid("wpa_handshake.cap")
+    print(ssid_info)
 
     # Read capture file -- it contains beacon, authentication, association, handshake and data
     wpa = rdpcap("wpa_handshake.cap")
