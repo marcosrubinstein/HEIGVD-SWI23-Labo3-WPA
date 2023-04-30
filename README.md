@@ -111,6 +111,8 @@ Utilisant votre script précédent, le modifier pour réaliser les taches suivan
    - Identiques &rarr; La passphrase utilisée est correcte
    - Différents &rarr; Essayer avec une nouvelle passphrase
 
+> ![](img/3.2_script_output.png)
+
 
 #### 3.3. Attaque hashcat
 

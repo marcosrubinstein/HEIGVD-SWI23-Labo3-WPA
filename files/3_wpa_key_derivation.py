@@ -63,7 +63,7 @@ def find_ssid(pcap):
         # Display found APs with index
         for i, ssid_info in enumerate(ssid_infos):
             print(f"{i}: SSID: {ssid_info.ssid} | MAC Address: {ssid_info.mac_address}")
-        chosen_ssid_index = input("PEnter the number of the AP you want to choose: ")
+        chosen_ssid_index = input("Enter the number of the AP you want to choose: ")
         
         # Ask for input as long as the input is not valid
         while not chosen_ssid_index.isdigit() or int(chosen_ssid_index) not in range(len(ssids)):
