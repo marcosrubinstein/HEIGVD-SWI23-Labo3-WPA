@@ -2,9 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Auteurs: Thomann Yanick, Galley David, Gachet Jean
+Auteurs : Thomann Yanick, Galley David, Gachet Jean
+Date : 01/05/2023
 
-Récupères les informations utiles à la dérivations des clés WPA depuis une capture pcap
+Récupères les informations utiles à la dérivation des clés WPA depuis une capture pcap.
 Dérive ensuite les clés
 
 Informations sur l'auteur original:
