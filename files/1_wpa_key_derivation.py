@@ -2,23 +2,23 @@
 # -*- coding: utf-8 -*-
 
 """
-Derive WPA keys from Passphrase and 4-way handshake info
+Auteurs: Thomann Yanick, Galley David, Gachet Jean
 
-Calcule un MIC d'authentification (le MIC pour la transmission de données
-utilise l'algorithme Michael. Dans ce cas-ci, l'authentification, on utilise
-sha-1 pour WPA2 ou MD5 pour WPA)
+Récupères les informations utiles à la dérivations des clés WPA depuis une capture pcap
+Dérive ensuite les clés
+
+Informations sur l'auteur original:
+    __author__      = "Abraham Rubinstein et Yann Lederrey"
+    __copyright__   = "Copyright 2017, HEIG-VD"
+    __license__ 	= "GPL"
+    __version__ 	= "1.0"
+    __email__ 		= "abraham.rubinstein@heig-vd.ch"
+    __status__ 		= "Prototype"
 """
 
-__author__      = "Abraham Rubinstein et Yann Lederrey"
-__copyright__   = "Copyright 2017, HEIG-VD"
-__license__ 	= "GPL"
-__version__ 	= "1.0"
-__email__ 		= "abraham.rubinstein@heig-vd.ch"
-__status__ 		= "Prototype"
 
 from scapy.all import *
 from binascii import a2b_hex, b2a_hex
-#from pbkdf2 import pbkdf2_hex
 from pbkdf2 import *
 from numpy import array_split
 from numpy import array

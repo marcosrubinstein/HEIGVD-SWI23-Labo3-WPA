@@ -2,15 +2,19 @@
 # -*- coding: utf-8 -*-
 
 """
+Auteurs: David Gallay, Jean Gachet, Yanick Thomann
+
+This script is used to crack a WPA password using the PMKID attack.
+It parses a pcap file passed as commandline argument (-c/--pcap) and checks for SSIDs
+It also takes a wordlist (-w/--wordlist) used for bruteforcing the wifi password
+
+Script utilisé pour cracker un mot de passe WPA avec l'attaque sur PMKID
+Il parcourt un fichier pcap (-c/--pcap) et cherche des SSID annoncant un PMKID
+Il utilise une list de mots (-w/--wordlist) pour bruteforcer le mot de passe du Wifi
 
 """
 
-__author__      = "Abraham Rubinstein et Yann Lederrey"
-__copyright__   = "Copyright 2017, HEIG-VD"
-__license__ 	= "GPL"
-__version__ 	= "1.0"
-__email__ 		= "abraham.rubinstein@heig-vd.ch"
-__status__ 		= "Prototype"
+
 
 from scapy.all import *
 from pbkdf2 import *
@@ -135,8 +139,7 @@ def make_pmkid(ap_mac, client_mac, ssid, passphrase):
     pmkid = hmac.new(pmk, b"PMK Name" + bytes.fromhex(ap_mac) + bytes.fromhex(client_mac), hashlib.sha1).hexdigest()[:32]
     return pmkid
 
-
-
+# Read pcap
 wpa=rdpcap(pcap)
 
 # Important parameters for key derivation - most of them can be obtained from the pcap file

@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
-Authors: Thomann Yanick, Galley David, Gachet Jean
+Auteurs: Thomann Yanick, Galley David, Gachet Jean
 Date: 30/04/2023
 
-Word list found here: https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/WiFi-WPA/probable-v2-wpa-top4800.txt
-Note: added "actuelle" in 1500th place.
+Liste de mots utilisée trouvée ici: https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/WiFi-WPA/probable-v2-wpa-top4800.txt
+Note: ajouté "actuelle" en 1500ème position.
 
-Derive WPA keys from Passphrase and 4-way handshake info
+Derive les clés WPA depuis un mot de passe et les infos d'un 4-way handshake
 
 Calcule un MIC d'authentification (le MIC pour la transmission de données
 utilise l'algorithme Michael. Dans ce cas-ci, l'authentification, on utilise
