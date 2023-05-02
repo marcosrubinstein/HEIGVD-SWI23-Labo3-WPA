@@ -41,14 +41,14 @@ wpa=rdpcap("wpa_handshake.cap")
 
 # Important parameters for key derivation - most of them can be obtained from the pcap file
 passPhrase  = "actuelle"
-A           = "Pairwise key expansion" #this string is used in the pseudo-random function
-ssid        = wpa[0].info.decode() ###### A COMMENTER
-APmac       = a2b_hex(wpa[0].addr2.replace(":","")) ###### A COMMENTER
-Clientmac   = a2b_hex(wpa[1].addr1.replace(":","")) ###### A COMMENTER
+A           = "Pairwise key expansion" #t his string is used in the pseudo-random function
+ssid        = wpa[0].info.decode() # extracts the SSID from the first packet
+APmac       = a2b_hex(wpa[0].addr2.replace(":","")) # extracts the MAC address from the AP in the first packet
+Clientmac   = a2b_hex(wpa[1].addr1.replace(":","")) # extracts the MAC address from the client in the second packet
 
 # Authenticator and Supplicant Nonces
-ANonce      = a2b_hex(wpa[5][EAPOL].load[13:45].hex()) ###### A COMMENTER
-SNonce      = a2b_hex(bytes(wpa[6])[65:97].hex()) ######### A COMMENTER
+ANonce      = a2b_hex(wpa[5][EAPOL].load[13:45].hex()) # extracts the Authenticator Nonce
+SNonce      = a2b_hex(bytes(wpa[6])[65:97].hex()) # extracts the Supplicant Nonce
 
 # This is the MIC contained in the 4th frame of the 4-way handshake
 # When attacking WPA, we would compare it to our own MIC calculated using passphrases from a dictionary
