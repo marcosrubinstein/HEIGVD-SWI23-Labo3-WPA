@@ -57,7 +57,7 @@ APmac = a2b_hex(fourWayHandshake[3].addr1.replace(":", ""))
 Clientmac = a2b_hex(fourWayHandshake[3].addr2.replace(":", ""))
 
 # Important parameters for key derivation - most of them can be obtained from the pcap file
-passPhrase = "actuelle"
+#passPhrase = "actuelle"
 A = "Pairwise key expansion"  # this string is used in the pseudo-random function
 
 # Authenticator and Supplicant Nonces
