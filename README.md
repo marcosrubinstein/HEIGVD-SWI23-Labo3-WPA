@@ -55,12 +55,37 @@ Dans cette première partie, vous allez récupérer le script **Python3** [wpa\_
   > - Dans le paquet 6, on retrouve le nonce de l'AP
   >
   > - Dans le paquet 7, on retrouve le nonce du client
+  >
+  > Toutes les autres valeurs du script sont dérivée et pas récupérables directement dans Wireshark
 
 - Analyser le fonctionnement du script. En particulier, __faire attention__ à la variable ```data``` qui contient la payload de la trame et la comparer aux données de la quatrième trame du 4-way handshake. Lire [la fin de ce document](#quelques-éléments-à-considérer-) pour l’explication de la différence.
 
-  > `def customPRF512(key,A,B):` est la fonction utilisée pour passer de la Pairwise Master Key (PMK) à la Pairwise Transient Key (PTK)
+  > Le script commence par lire une capture `.pcap`
   >
-  > // TODO
+  > Il contient ensuite un certain nombre de valeurs en dur: 
+  >
+  > - `passPhrase`: Le mot de passe d'authentification à l'AP
+  > - `A`: Une string utilisée pour la création de la PTK, cette string est définie dans la norme WPA.
+  >   [Doc de hmac.new()](https://docs.python.org/3/library/hmac.html),
+  >   [Explication de la norme](http://etutorials.org/Networking/802.11+security.+wi-fi+protected+access+and+802.11i/Part+II+The+Design+of+Wi-Fi+Security/Chapter+10.+WPA+and+RSN+Key+Hierarchy/Computing+the+Temporal+Keys/)
+  > - `ssid`: le nom du Wifi à attaquer
+  > - `APmac`: L'adresse MAC de l'AP
+  > - `Clientmac`: L'adresse MAC du client
+  > - `ANonce`: Le nonce de l'AP envoyé au client (message 2 du 4-way handshake)
+  > - `SNonce`: Le nonce du client envoyé à l'AP (message 3 du 4-way handshake)
+  > - `mic_to_test`: Le MIC tiré du message 4 du 4-way handshake qui sera utilisé comme condition de réussite de notre bruteforce au point 2
+  > - `B`: La concaténation des adresses MAC de l'AP et du Client (par ordre croissant), suivi des Nonces de l'AP et du client, par ordre croissant
+  >   Voir [Explication]([Explication de la norme](http://etutorials.org/Networking/802.11+security.+wi-fi+protected+access+and+802.11i/Part+II+The+Design+of+Wi-Fi+Security/Chapter+10.+WPA+and+RSN+Key+Hierarchy/Computing+the+Temporal+Keys/)).
+  >- `data`: Le payload EAPOL, il contient le MIC à utiliser pour le bruteforce.
+  > 
+  >On encode ensuite la passphase et le ssid, qui sont utilisé pour construire la Pairewise Mater Key (PMK). La passphrase sert de clé pour la fonction PBKDF2-SHA1, les données hashées étant le SSID. 4096 rondes, 32 bytes de sortie
+  > 
+  >Grâce à la PMK, on peut ensuite calculer la PTK en passant
+  > 
+  >`customPRF512(key,A,B):` est la fonction utilisée pour passer de la Pairwise Master Key (PMK) à la Pairwise Transient Key (PTK). PMK est la clé, A et B les données qui seront utilisées pour rendre la PTK unique.
+  > 
+  >On calcule ensuit le MIC en prenant les 16 premiers octets de la PTK comme clé HMAC, et les `data`comme données.
+  > 
 
 - __Modifier le script__ pour qu’il récupère automatiquement, à partir de la capture, les valeurs qui se trouvent actuellement codées en dur (```ssid```, ```APmac```, ```Clientmac```, nonces…) 
 
@@ -117,6 +142,16 @@ Utilisant votre script précédent, le modifier pour réaliser les taches suivan
 #### 3.3. Attaque hashcat
 
 A manière de comparaison, réaliser l'attaque sur le [fichier de capture](files/PMKID_handshake.pcap) utilisant la méthode décrite [ici](https://hashcat.net/forum/thread-7717.html).
+
+> Vu que l'AP nous n'avons pas d'AP qui envoie un PMKID, nous ne pouvons pas faire l'étape 1.
+>
+> Étape 2: On utilise `hcxpcaptool` pour scanner le `.pcap` pour des PMKID, et transformer ceux-cis en un hash utilisable par hashcat.
+> ![](img/3.3_hcxcaptool_output.png)
+>
+> Étape 3: On craque les hashes avec hashcat avec notre dicitonnaire
+> ![](img/3.3_hashcat_output.png)
+>
+> _NB_: The plugin 16800 is deprecated and was replaced with plugin 22000. For more details, please read: https://hashcat.net/forum/thread-10253.html
 
 
 ### 4. Scairodump (Challenge optionnel pour un bonus)
