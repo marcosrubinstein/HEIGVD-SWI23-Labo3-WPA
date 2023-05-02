@@ -49,12 +49,12 @@ def find_ssid(pcap):
     # Iterate over all packets in capture
     for packet in pcap:
         # If the packet is a 802.11 beacon
-        if packet.haslayer(Dot11Beacon):
+        if packet.haslayer(Dot11Beacon):  # TODO AssoReq better than Beacon ?
             # Retrieve the SSID
             ssid = packet[Dot11Elt].info.decode()
             # Add AP to dict if not seen before
             if ssid not in ssids:
-                ssids[ssid] = packet.addr2
+                ssids[ssid] = packet.addr2  # TODO addr3 better than addr2 for Beacon (since it's a management frame) ?
     # If there is only one AP found, return its SSID and MAC in an AP object
     if len(ssids) == 1:
         ssid, mac = next(iter(ssids.items()))
@@ -79,7 +79,7 @@ def find_ssid(pcap):
 
 # Function used to get wifi clients from a wireshark capture
 def get_wifi_clients(pcap):
-    # Initialize and empty dictionnary to contain clients
+    # Initialize and empty dictionary to contain clients
     clients = {}
     # Iterate over all the packets
     for packet in pcap:
