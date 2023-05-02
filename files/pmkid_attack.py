@@ -42,7 +42,7 @@ def collect_infos_from_pcap(pcapfile, constructor_mac_prefix=""):
                     
                     print("yessssss")
                     #check if it is the first packet of the 4-way handshake based on the message info number
-                    to_ds = wpa[i].FCfield & TO_DS != 0 # Identify the direction of the message C->AP or AP->
+                    to_ds = wpa[i].FCfield & TO_DS != 0 # Identify the direction of the message C->AP or AP->C
                     if to_ds:
                        continue
                     else:
@@ -102,15 +102,12 @@ def main():
         data = b"PMK Name" + Apmac + Clientmac
         PMKID = hmac.new(PMK, data, hashlib.sha1)
 
-        print("first: ", PMKID.hexdigest())
+        print("first: ", PMKID.hexdigest()[:-8])
         print("second: ", pmkid.hex())
 
-        if pmkid.hex().startswith(PMKID.hexdigest()):
+        if pmkid.hex() == PMKID.hexdigest()[:-8]:
             print("FOUND PMK: ", passphrase)
             break
-
-    
- 
 
 if __name__ == "__main__":
     main()
