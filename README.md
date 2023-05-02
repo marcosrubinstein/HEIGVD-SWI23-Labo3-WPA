@@ -107,6 +107,8 @@ Utilisant le script [wpa\_key\_derivation.py](files/wpa_key_derivation.py) comme
    - Identiques &rarr; La passphrase utilisée est correcte
    - Différents &rarr; Essayer avec une nouvelle passphrase
 
+> Voir repo, script 2_scaircrack.py
+
 ### 3. Attaque PMKID
 
 #### 3.1. Obtention de la PMKID et des paramètres pour la dérivation de la PMK
@@ -120,7 +122,7 @@ Voici ce que vous devez faire pour cette partie :
 - __Modifier votre script WPA__ pour qu’il récupère automatiquement, à partir de la capture, la valeur de la PMKID
 - Vous aurez aussi besoin de récupérer les valeurs du ```ssid```, ```APmac``` et ```Clientmac``` (ceci est normalement déjà fait par votre script) 
 
-> Voir repo, script 3_wpa_key_derivation.py
+> Voir repo, script 3_pmkid_attack.py
 
 
 #### 3.2. Cracker la Passphrase utilisant l'attaque PMKID
