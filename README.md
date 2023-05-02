@@ -90,6 +90,8 @@ Dans cette première partie, vous allez récupérer le script **Python3** [wpa\_
 - __Modifier le script__ pour qu’il récupère automatiquement, à partir de la capture, les valeurs qui se trouvent actuellement codées en dur (```ssid```, ```APmac```, ```Clientmac```, nonces…) 
 
   > Voir repo, script 1_wpa_key_derivation.py
+  >
+  > ![](img/1.3_script_output.png)
 
 
 ### 2. Scaircrack (aircrack basé sur Scapy)
@@ -108,6 +110,8 @@ Utilisant le script [wpa\_key\_derivation.py](files/wpa_key_derivation.py) comme
    - Différents &rarr; Essayer avec une nouvelle passphrase
 
 > Voir repo, script 2_scaircrack.py
+>
+> ![](img/2_script_output.png)
 
 ### 3. Attaque PMKID
 
@@ -145,7 +149,7 @@ Utilisant votre script précédent, le modifier pour réaliser les taches suivan
 
 A manière de comparaison, réaliser l'attaque sur le [fichier de capture](files/PMKID_handshake.pcap) utilisant la méthode décrite [ici](https://hashcat.net/forum/thread-7717.html).
 
-> Vu que l'AP nous n'avons pas d'AP qui envoie un PMKID, nous ne pouvons pas faire l'étape 1.
+> Vu que nous n'avons pas d'AP qui envoie un PMKID, nous ne pouvons pas faire l'étape 1.
 >
 > Étape 2: On utilise `hcxpcaptool` pour scanner le `.pcap` pour des PMKID, et transformer ceux-cis en un hash utilisable par hashcat.
 > ![](img/3.3_hcxcaptool_output.png)
