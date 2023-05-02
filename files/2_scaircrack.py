@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Auteurs: Thomann Yanick, Galley David, Gachet Jean
-Date: 30/04/2023
+Auteurs : Thomann Yanick, Galley David, Gachet Jean
+Date : 01/05/2023
 
 Liste de mots utilisée trouvée ici: https://raw.githubusercontent.com/danielmiessler/SecLists/master/Passwords/WiFi-WPA/probable-v2-wpa-top4800.txt
 Note: ajouté "actuelle" en 1500ème position.
@@ -22,10 +22,14 @@ from scapy.all import *
 from pbkdf2 import *
 
 
+# values to distinguish the messages of a 4-way handshake
 key_infos = [0x008a, 0x010a, 0x13ca, 0x030a]
 
 
 def is_data_from_ds(pkt):
+    """
+    This function returns true if the packets is a data packet going from an AP to a STA.
+    """
     if pkt.haslayer(Dot11) and pkt.type == 2:  # data packets
         ds = pkt.FCfield & 0x3  # DS bits in the frame control field
         to_ds = ds & 0x1 == 1  # 1st bit is to DS
@@ -34,6 +38,9 @@ def is_data_from_ds(pkt):
 
 
 def is_data_to_ds(pkt):
+    """
+    This function returns true if the packets is a data packet going from a STA to an AP.
+    """
     if pkt.haslayer(Dot11) and pkt.type == 2:  # data packets
         ds = pkt.FCfield & 0x3  # DS bits in the frame control field
         to_ds = ds & 0x1 == 1  # 1st bit is to DS
@@ -42,6 +49,10 @@ def is_data_to_ds(pkt):
 
 
 def get_key_info(pkt):
+    """
+    Returns the 2 bytes containing the key information.
+    These values can be used to distinguish messages of a 4-way handshake.
+    """
     if pkt.haslayer(EAPOL):
         payload = pkt[EAPOL].load
         return struct.unpack("!H", payload[1:3])[0]
@@ -56,7 +67,13 @@ def get_next_line_from_file(filename):
             yield line.strip()
 
 
-def get_handshakes(pcap):
+def get_ssids_and_handshakes(pcap):
+    """
+    This function returns 2 dictionaries:
+        1) ssids: keys = SSID names, values = MAC address of AP
+        2) handshakes: keys = SSID names, values = array of 4 packets constituting a 4-way handshake for the SSID
+    """
+
     # 1. Get all SSIDs in the capture, and their associated AP MAC addresses
     # Initialize an empty dictionary
     ssids = {}
@@ -109,18 +126,18 @@ def get_handshakes(pcap):
     return ssids, handshakes
 
 
-def custom_prf512(key, A, B):
+def custom_prf512(key, a, b):
     """
     This function calculates the key expansion from the 256 bit PMK to the 512 bit PTK
     """
-    blen = 64
+    b_len = 64
     i = 0
-    R = b''
-    while i <= ((blen * 8 + 159) / 160):
-        hmacsha1 = hmac.new(key, A + str.encode(chr(0x00)) + B + str.encode(chr(i)), hashlib.sha1)
+    r = b''
+    while i <= ((b_len * 8 + 159) / 160):
+        hmacsha1 = hmac.new(key, a + str.encode(chr(0x00)) + b + str.encode(chr(i)), hashlib.sha1)
         i += 1
-        R = R + hmacsha1.digest()
-    return R[:blen]
+        r = r + hmacsha1.digest()
+    return r[:b_len]
 
 
 if __name__ == '__main__':
@@ -129,7 +146,7 @@ if __name__ == '__main__':
     wpa = rdpcap("wpa_handshake.cap")
 
     # Get all 4-way handshakes in the pcap
-    ssids, handshakes = get_handshakes(wpa)
+    ssids, handshakes = get_ssids_and_handshakes(wpa)
 
     for ssid in ssids:
         if ssid not in handshakes.keys():
