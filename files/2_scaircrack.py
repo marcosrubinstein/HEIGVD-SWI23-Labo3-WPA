@@ -90,38 +90,35 @@ def get_ssids_and_handshakes(pcap):
     # 2. Try and find a complete 4-way handshake for each SSID
     handshakes = {}
     for ssid in ssids:
-        handshake = []
-        hs_pkt = 0  # handshake message number (0 indexed)
+        handshake = {}
         ap_mac = ssids[ssid]
-        cl_mac = ""
         for pkt in pcap:
             # check if the packet is a WPA key packet from the AP
             if pkt.haslayer(EAPOL):
                 # is it the 1st message of a 4-way handshake for the given ssid ? (from AP to client)
-                if hs_pkt == 0 and get_key_info(pkt) == key_infos[hs_pkt]\
-                        and pkt.addr2 == ap_mac:
-                    cl_mac = pkt.addr1
-                    handshake.append(pkt)
-                    hs_pkt += 1
+                if get_key_info(pkt) == key_infos[0] and pkt.addr2 == ap_mac:  # message 1 of handshake
+                    # add message 1 of handshake in dictionary with key = client MAC
+                    handshake[pkt.addr1] = []
+                    handshake[pkt.addr1].append(pkt)
                 # is it the 2nd message ? (from client to AP)
-                elif hs_pkt == 1 and get_key_info(pkt) == key_infos[hs_pkt]\
-                        and pkt.addr1 == ap_mac and pkt.addr2 == cl_mac:
-                    handshake.append(pkt)
-                    hs_pkt += 1
+                elif get_key_info(pkt) == key_infos[1] and pkt.addr1 == ap_mac:  # message 2 of handshake
+                    # if client MAC (pkt.addr2 here) already in handshake
+                    if pkt.addr2 in handshake:
+                        handshake[pkt.addr2].append(pkt)  # add message 2
                 # is it the 3rd message ? (from AP to client)
-                elif hs_pkt == 2 and get_key_info(pkt) == key_infos[hs_pkt]\
-                        and pkt.addr1 == cl_mac and pkt.addr2 == ap_mac:
-                    handshake.append(pkt)
-                    hs_pkt += 1
+                elif get_key_info(pkt) == key_infos[2] and pkt.addr2 == ap_mac:  # message 3 of handshake
+                    # if client MAC (pkt.addr1 here) already in handshake with 2 messages
+                    if pkt.addr1 in handshake and len(handshake[pkt.addr1]) == 2:
+                        handshake[pkt.addr1].append(pkt)  # add message 3
                 # is it the 4th message ? (from client to AP)
-                elif hs_pkt == 3 and get_key_info(pkt) == key_infos[hs_pkt]\
-                        and pkt.addr1 == ap_mac and pkt.addr2 == cl_mac:
-                    handshake.append(pkt)
-                    hs_pkt += 1
-                    handshakes[ssid] = handshake
+                elif get_key_info(pkt) == key_infos[3] and pkt.addr1 == ap_mac:  # message 4 of handshake
+                    # if client MAC (pkt.addr2 here) already in handshake with 3 messages
+                    if pkt.addr2 in handshake:
+                        handshake[pkt.addr2].append(pkt)  # add message 4
+                    handshakes[ssid] = handshake[pkt.addr2]  # add full 4-way handshake
                     break  # we found a whole 4-way handshake for this ssid
-                else:
-                    print("No 4-way handshake found for {}".format(ssid))
+        if ssid not in handshakes:
+            print("No complete 4-way handshake found for {}".format(ssid))
 
     return ssids, handshakes
 
@@ -194,7 +191,7 @@ if __name__ == '__main__':
             # as seen with the assistant, the output of hmac here is too large, taking only the first 32 bytes
             mic = hmac.new(kck, data, hashlib.sha1).hexdigest()[0:32]
             if mic == mic_to_test:
-                print("The passphrase for \"{}\" is {}".format(ssid, passphrase))
+                print("The passphrase for \"{}\" is: {}".format(ssid, passphrase))
                 exit()
 
         print("The passphrase for \"{}\" was not found in the file.".format(ssid))
