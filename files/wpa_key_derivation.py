@@ -65,7 +65,7 @@ def extract_info_from_packet():
 
     eapol = fourWayHandshake[3].getlayer(EAPOL)
     data = eapol.version.to_bytes(1, 'big') + eapol.type.to_bytes(1, 'big') + eapol.len.to_bytes(2, 'big') + eapol.load[:77] + b'\x00' * 18
-    return ssid, APmac, Clientmac, ANonce, SNonce, mic_to_test, eapol, data
+    return ssid, APmac, Clientmac, ANonce, SNonce, mic_to_test.hex(), eapol, data
 
 
 if __name__ == "__main__":
