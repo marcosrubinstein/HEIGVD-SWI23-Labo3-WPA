@@ -38,7 +38,7 @@ def customPRF512(key,A,B):
     return R[:blen]
 
 # Read capture file -- it contains beacon, authentication, associacion, handshake and data
-wpa=rdpcap("wpa_handshake.cap") 
+wpa=rdpcap("wpa_handshake.cap")
 
 # Important parameters for key derivation - most of them can be obtained from the pcap file
 passPhrase  = "actuelle"
