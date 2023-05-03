@@ -46,7 +46,7 @@ def customPRF512(key,A,B):
 
 # Read capture file -- it contains beacon, authentication, associacion, handshake and data
 wpa=rdpcap("wpa_handshake.cap") 
-wordlist = open("wordlist.txt", "r");
+wordlist = open("wordlist.txt", "r")
 
 # Get the association request and the handshake number
 aR = ""
