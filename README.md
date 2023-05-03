@@ -53,6 +53,13 @@ Réponse :
 - Analyser le fonctionnement du script. En particulier, __faire attention__ à la variable ```data``` qui contient la payload de la trame et la comparer aux données de la quatrième trame du 4-way handshake. Lire [la fin de ce document](#quelques-éléments-à-considérer-) pour l’explication de la différence.
 - __Modifier le script__ pour qu’il récupère automatiquement, à partir de la capture, les valeurs qui se trouvent actuellement codées en dur (```ssid```, ```APmac```, ```Clientmac```, nonces…) 
 
+Réponse :
+
+Exécution du script : 
+
+Script: 'files/wpa_key_derivation_automated.py'
+
+![Résultat exécution du script](figures/SWI_WPA_1_script.png)
 
 ### 2. Scaircrack (aircrack basé sur Scapy)
 
@@ -68,6 +75,14 @@ Utilisant le script [wpa\_key\_derivation.py](files/wpa_key_derivation.py) comme
 - Comparer les deux MIC
    - Identiques &rarr; La passphrase utilisée est correcte
    - Différents &rarr; Essayer avec une nouvelle passphrase
+
+Réponse :
+
+Exécution du script : 
+
+Script: 'files/scaircrack.py'
+
+![Résultat exécution du script](figures/SWI_WPA_2_script.png)
 
 ### 3. Attaque PMKID
 
@@ -95,6 +110,14 @@ Utilisant votre script précédent, le modifier pour réaliser les taches suivan
 - Comparer la PMKID calculée avec celle récupérée de la capture :
    - Identiques &rarr; La passphrase utilisée est correcte
    - Différents &rarr; Essayer avec une nouvelle passphrase
+
+Réponse :
+
+Exécution du script : 
+
+Script: 'files/pmkid_attack_automated.py'
+
+![Résultat exécution du script](figures/SWI_WPA_3_script.png)
 
 
 #### 3.3. Attaque hashcat
