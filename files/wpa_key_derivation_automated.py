@@ -6,7 +6,6 @@
 # Guilain Mbayo
 # Mehdi Salhi
 
-
 """
 Derive WPA keys from Passphrase and 4-way handshake info
 
@@ -51,6 +50,8 @@ wpa=rdpcap("wpa_handshake.cap")
 # Get the association request and the handshake number
 aR = ""
 handshake = ""
+# Iterate over the packets and find the association request layer and the EAPOL
+# layer
 for i, pkt in enumerate(wpa):
     if aR == "":
         # find the association request, which has the Dot11AssoReq layer
@@ -63,6 +64,7 @@ for i, pkt in enumerate(wpa):
     if aR != "" and handshake != "":
         break
 
+# get the ap and client mac
 apMac = wpa[handshake].addr2.replace(":", "")
 clientMac = wpa[handshake].addr1.replace(":", "")
 
@@ -93,9 +95,10 @@ message_integrity_check = binascii.hexlify(wpa[handshake+3][Raw].load)[154:186]
 
 B           = min(APmac,Clientmac)+max(APmac,Clientmac)+min(ANonce,SNonce)+max(ANonce,SNonce) #used in pseudo-random function
 
-data        = a2b_hex("0103005f02030a0000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000") #cf "Quelques détails importants" dans la donnée
+#data        = a2b_hex("0103005f02030a0000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000") #cf "Quelques détails importants" dans la donnée
 
-# Reconstruct the wpa data field and zero out the mic field
+# Reconstruct the wpa data field and zero out the mic field (info given in the
+# README)
 wpa_data = binascii.hexlify(bytes(wpa[handshake+3][EAPOL]))
 wpa_data = wpa_data.replace(message_integrity_check, b"0" * 32)
 wpa_data = binascii.a2b_hex(wpa_data)
