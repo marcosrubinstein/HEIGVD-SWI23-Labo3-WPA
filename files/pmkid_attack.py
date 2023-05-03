@@ -53,12 +53,7 @@ messages = wpa.filter(
     lambda pkt: pkt if pkt.haslayer(EAPOL) and pkt.getlayer(EAPOL).type == 3 else None
 )
 
-# Important parameters for key derivation - most of them can be obtained from the pcap file
-A = "Pairwise key expansion"  # this string is used in the pseudo-random function
-
 pmkid = None
-ANonce = None
-SNonce = None
 mac_ap = None
 mac_sta = None
 for m in messages:
@@ -67,10 +62,6 @@ for m in messages:
         pmkid = m.load[101:101+16]
         mac_sta = m.addr1
         mac_ap = m.addr2
-        # TODO: On défini le nonce source (le challenge)
-        ANonce = m.load[13:13+32]
-    elif m.addr2 == mac_ap and m.addr1 == mac_sta:
-        SNonce = m.load[13:13+32]
         break
 
 if pmkid == None:
@@ -97,43 +88,11 @@ for line in f.readlines():
 
 f.close()
 
-APmac = mac_ap
-Clientmac = mac_sta
-
-B = (
-    min(APmac, Clientmac)
-    + max(APmac, Clientmac)
-    + min(ANonce, SNonce)
-    + max(ANonce, SNonce)
-)  # used in pseudo-random function
-
-print("\n\nValues used to derivate keys")
+print("\n\nValues found")
 print("============================")
-print("Passphrase: ", passPhrase, "\n")
 print("SSID: ", ssid, "\n")
-print("AP Mac: ", b2a_hex(APmac), "\n")
-print("CLient Mac: ", b2a_hex(Clientmac), "\n")
-print("AP Nonce: ", b2a_hex(ANonce), "\n")
-print("Client Nonce: ", b2a_hex(SNonce), "\n")
+print("AP Mac: ", b2a_hex(mac_ap), "\n")
+print("Client Mac: ", b2a_hex(mac_sta), "\n")
+print("PMKID: ", b2a_hex(pmkid), "\n")
+print("Passphrase: ", passPhrase, "\n")
 
-# calculate 4096 rounds to obtain the 256 bit (32 oct) PMK
-passPhrase = str.encode(passPhrase)
-pmk = pbkdf2(hashlib.sha1, passPhrase, ssid, 4096, 32)
-
-# expand pmk to obtain PTK
-ptk = customPRF512(pmk, str.encode(A), B)
-
-# calculate MIC over EAPOL payload (Michael)- The ptk is, in fact, KCK|KEK|TK|MICK
-#mic = hmac.new(ptk[0:16], data, hashlib.sha1)
-
-
-print("\nResults of the key expansion")
-print("=============================")
-print("PMK:\t\t", pmk.hex(), "\n")
-print("PTK:\t\t", ptk.hex(), "\n")
-print("KCK:\t\t", ptk[0:16].hex(), "\n")
-print("KEK:\t\t", ptk[16:32].hex(), "\n")
-print("TK:\t\t", ptk[32:48].hex(), "\n")
-print("MICK:\t\t", ptk[48:64].hex(), "\n")
-#TODO: ??
-#print("MIC:\t\t", mic.hexdigest(), "\n")
