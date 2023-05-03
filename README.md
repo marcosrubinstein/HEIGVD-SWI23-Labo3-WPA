@@ -47,12 +47,7 @@ Réponse :
 - AP Nonce: se trouve dans les packet "EAPOL" sous 802.1X Authentication > "WPA
 - Key Nonce"
 - AP Nonce: idem
-- PMK:
-- PTK:
-- KCK:
-- KEK: 
-- TK: 
-- MICK:
+- PMK, PTK, KCK, KEK, TK, MICK : pas trouvé dans la capture. Sont calculés.
 - MIC: 4ème message EAPOL sous 802.1X Authentication > "WPA Key MIC"
 
 - Analyser le fonctionnement du script. En particulier, __faire attention__ à la variable ```data``` qui contient la payload de la trame et la comparer aux données de la quatrième trame du 4-way handshake. Lire [la fin de ce document](#quelques-éléments-à-considérer-) pour l’explication de la différence.
