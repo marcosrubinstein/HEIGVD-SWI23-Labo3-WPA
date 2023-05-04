@@ -40,6 +40,21 @@ Dans cette première partie, vous allez récupérer le script **Python3** [wpa\_
 - Analyser le fonctionnement du script. En particulier, __faire attention__ à la variable ```data``` qui contient la payload de la trame et la comparer aux données de la quatrième trame du 4-way handshake. Lire [la fin de ce document](#quelques-éléments-à-considérer-) pour l’explication de la différence.
 - __Modifier le script__ pour qu’il récupère automatiquement, à partir de la capture, les valeurs qui se trouvent actuellement codées en dur (```ssid```, ```APmac```, ```Clientmac```, nonces…) 
 
+Réponse :
+
+- SSID: IEEE 802.11 Wireless Management > Tagget Parameters > Tag: SSID parameter > set > SSID
+- AP Mac: on la retrouve dans l'adresse source ou destination
+- Client Mac: idem
+- AP Nonce: se trouve dans les packet "EAPOL" sous 802.1X Authentication > "WPA Key Nonce"
+- AP Nonce: idem
+- PMK, PTK, KCK, KEK, TK, MICK : pas trouvé dans la capture. Sont calculés.
+- MIC: 4ème message EAPOL sous 802.1X Authentication > "WPA Key MIC"
+
+Exécution du script : 
+
+Script: [files/wpa_key_derivation_automated.py](files/wpa_key_derivation_automated.py)
+
+![Résultat exécution du script](figures/SWI_WPA_1_script.png)
 
 ### 2. Scaircrack (aircrack basé sur Scapy)
 
@@ -55,6 +70,17 @@ Utilisant le script [wpa\_key\_derivation.py](files/wpa_key_derivation.py) comme
 - Comparer les deux MIC
    - Identiques &rarr; La passphrase utilisée est correcte
    - Différents &rarr; Essayer avec une nouvelle passphrase
+
+Réponse :
+
+Exécution du script : 
+
+Script: [files/scaircrack.py](files/scaircrack.py)
+
+![Résultat exécution du script](figures/SWI_WPA_2_script.png)
+
+Nous avons comparé la sortie des deux script et les résultats sont identiques,
+confirmant ansi que les calculs sont corrects.
 
 ### 3. Attaque PMKID
 
@@ -83,17 +109,70 @@ Utilisant votre script précédent, le modifier pour réaliser les taches suivan
    - Identiques &rarr; La passphrase utilisée est correcte
    - Différents &rarr; Essayer avec une nouvelle passphrase
 
+Réponse :
+
+Exécution du script : 
+
+Script: [files/pmkid_attack_automated.py](files/pmkid_attack_automated.py)
+
+![Résultat exécution du script](figures/SWI_WPA_3_script.png)
+
 
 #### 3.3. Attaque hashcat
 
 A manière de comparaison, réaliser l'attaque sur le [fichier de capture](files/PMKID_handshake.pcap) utilisant la méthode décrite [ici](https://hashcat.net/forum/thread-7717.html).
 
+Réponse:
+
+Commandes:
+
+La commande suivante permet de convertir la capture en un fichier utilisable par
+hashcat : 
+
+```
+hcxpcaptool -z outhcx PMKID_handshake.pcap
+```
+
+Résultat:
+
+![Résultat](figures/SWI_WPA_3.3_1_hcxp.png)
+
+On peut ensuite cracker le mot de passe avec hashcat :
+
+Note: connaissant déjà le mot de passe, nous avons utilisé une attaque par mask
+avec 5 caractères en minuscule et 3 digits.
+
+```
+hashcat -m 16800 outhcx -a 3 -w 3 '?l?l?l?l?l?d?d?d'
+```
+
+![Résultat](figures/SWI_WPA_3.3_2_hashcat.png)
+
+Hashcat trouve le mot de passe, qu'il stock dans le fichier hashcat.potfile :
+
+![Résultat hashcat](files/hashcat.potfile)
+
+```
+2882661babd570c1d8140763ac9df8e60040893519b4077dff332ee264d4cad5*53756e726973655f322e3447487a5f444434423930:admin123
+2882661babd570c1d8140763ac9df8e60040893519b4077dff332ee264d4cad5*53756e726973655f322e3447487a5f444434423930:admin123
+```
+
+Comparaison:
+
+Dans notre cas, la méthode du PMKID était plus rapide car le mot de passe était
+connu et déjà dans une wordlist très courte. Cependant, la méthode Hashcat peut
+s'avérer plus utile sur des mots de passe inconnus et bénéficier de toute la
+puissance et flexibilité de Hashcat.
 
 ### 4. Scairodump (Challenge optionnel pour un bonus)
 
 **Note : cet exercice nécessite une interface WiFi en mode monitor. Si vous n'arrivez pas à passer votre interface interne en mode monitor et que vous voulez tenter de le faire, vous pouvez en emprunter une. Il faudra m'avertir pour se mettre d'accord et se retrouver à l'école.**
 
 Modifier votre script de cracking pour qu’il soit capable de faire les mêmes opérations que le script précédant mais sans utiliser une capture Wireshark. Pour cela, il faudra donc sniffer un 4-way handshake utilisant Scapy et refaire toutes les opérations de la partie 2 pour obtenir la passphrase. Le script doit implémenter la possibilité de déauthentifier un client pour stimuler le 4-way handshake. Cette déauthentification doit aussi être implémentée avec Scapy.
+
+Réponse:
+
+Pas réalisé.
 
 ## Quelques éléments à considérer :
 
