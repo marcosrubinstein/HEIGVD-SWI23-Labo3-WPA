@@ -50,7 +50,6 @@ B           = min(APmac, Clientmac) + max(APmac, Clientmac) + min(ANonce, SNonce
 data        = raw(wpa[8])[48:]
 
 
-
 def check(k):
     k = str.encode(k)
     pmk = pbkdf2(sha1, k, ssid, 4096, 32)
