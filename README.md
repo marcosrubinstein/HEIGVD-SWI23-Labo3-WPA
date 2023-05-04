@@ -42,12 +42,10 @@ Dans cette première partie, vous allez récupérer le script **Python3** [wpa\_
 
 Réponse :
 
-- SSID: IEEE 802.11 Wireless Management > Tagget Parameters > Tag: SSID parameter
-    > set > SSID
+- SSID: IEEE 802.11 Wireless Management > Tagget Parameters > Tag: SSID parameter > set > SSID
 - AP Mac: on la retrouve dans l'adresse source ou destination
 - Client Mac: idem
-- AP Nonce: se trouve dans les packet "EAPOL" sous 802.1X Authentication > "WPA
-    Key Nonce"
+- AP Nonce: se trouve dans les packet "EAPOL" sous 802.1X Authentication > "WPA Key Nonce"
 - AP Nonce: idem
 - PMK, PTK, KCK, KEK, TK, MICK : pas trouvé dans la capture. Sont calculés.
 - MIC: 4ème message EAPOL sous 802.1X Authentication > "WPA Key MIC"
