@@ -48,7 +48,9 @@ ANonce      = wpa[5][EAPOL].load[13:45]
 SNonce      = wpa[6][EAPOL].load[13:45]
 target_mic  = wpa[8][EAPOL].load[77:93]
 B           = min(APmac, Clientmac) + max(APmac, Clientmac) + min(ANonce, SNonce) + max(ANonce, SNonce)
-data        = raw(wpa[8])[48:]
+data        = list(raw(wpa[8])[48:])
+data[17:]   = [0]*82
+data        = bytes(data)
 
 
 # Function used to check candidate key
