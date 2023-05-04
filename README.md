@@ -129,6 +129,10 @@ A manière de comparaison, réaliser l'attaque sur le [fichier de capture](files
 
 Modifier votre script de cracking pour qu’il soit capable de faire les mêmes opérations que le script précédant mais sans utiliser une capture Wireshark. Pour cela, il faudra donc sniffer un 4-way handshake utilisant Scapy et refaire toutes les opérations de la partie 2 pour obtenir la passphrase. Le script doit implémenter la possibilité de déauthentifier un client pour stimuler le 4-way handshake. Cette déauthentification doit aussi être implémentée avec Scapy.
 
+Réponse:
+
+Pas réalisé.
+
 ## Quelques éléments à considérer :
 
 __Vous aurez peut-être besoin de lire ceci plus d'une fois pour comprendre...__
