@@ -143,7 +143,7 @@ Note: connaissant déjà le mot de passe, nous avons utilisé une attaque par ma
 avec 5 caractères en minuscule et 3 digits.
 
 ```
-hashcat m 16800 outhcx -a 3 -w 3 '?l?l?l?l?l?d?d?d'
+hashcat -m 16800 outhcx -a 3 -w 3 '?l?l?l?l?l?d?d?d'
 ```
 
 ![Résultat](figures/SWI_WPA_3.3_2_hashcat.png)
@@ -156,6 +156,13 @@ Hashcat trouve le mot de passe, qu'il stock dans le fichier hashcat.potfile :
 2882661babd570c1d8140763ac9df8e60040893519b4077dff332ee264d4cad5*53756e726973655f322e3447487a5f444434423930:admin123
 2882661babd570c1d8140763ac9df8e60040893519b4077dff332ee264d4cad5*53756e726973655f322e3447487a5f444434423930:admin123
 ```
+
+Comparaison:
+
+Dans notre cas, la méthode du PMKID était plus rapide car le mot de passe était
+connu et déjà dans une wordlist très courte. Cependant, la méthode Hashcat peut
+s'avérer plus utile sur des mots de passe inconnus et bénéficier de toute la
+puissance et flexibilité de Hashcat.
 
 ### 4. Scairodump (Challenge optionnel pour un bonus)
 
