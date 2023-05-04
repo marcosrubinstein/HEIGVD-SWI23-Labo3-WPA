@@ -63,8 +63,7 @@ print(f"Line count in wordlist : {num_lines}")
 with open(argv[1], 'r') as file:
     for key in tqdm(file, total=num_lines):
         if check(key.strip()):
+            print(f"Key found ! It's {key.strip()}")
             break
     else:
-        raise UserWarning("Key not found in the given wordlist")
-
-print(f"Key found ! It's {key.strip()}")
+        print("Key not found in the given wordlist")
