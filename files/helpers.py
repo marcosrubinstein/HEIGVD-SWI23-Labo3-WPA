@@ -52,3 +52,10 @@ def get_mic(packets):
     for packet in packets:
         if RadioTap in packet and packet[RadioTap].present.MCS and Dot11 in packet and packet[Dot11].FCfield == 1 and packet[Dot11].SC == 16:
             return packet[EAPOL].load[77:93]
+
+def get_pmkid(packet):
+    for packet in packets:
+        if packet.haslayer(Dot11Elt) and packet[Dot11Elt].ID == 48:
+            # Le champ Dot11Elt.ID 48 correspond à RSN IE
+            pmkid = packet[Dot11Elt].info[16:32]  # Le PMKID est situé dans les octets 16 à 32 du champ info de RSN IE
+            print(f"PMKID: {pmkid.hex()}")

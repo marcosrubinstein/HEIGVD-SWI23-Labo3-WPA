@@ -12,7 +12,7 @@ __version__ 	= "1.0"
 __email__ 		= "abraham.rubinstein@heig-vd.ch"
 __status__ 		= "Prototype"
 
-# from scapy.all import rdpcap, Dot11Beacon, Dot11, EAPOL, raw
+from scapy.all import rdpcap, Dot11Beacon, Dot11, EAPOL, raw
 #from tqdm import tqdm
 from sys import argv
 import helpers
@@ -23,10 +23,15 @@ import hmac
 
 # Load parameters
 wpa         = rdpcap("PMKID_handshake.pcap")
-ssid        = helpers.find_ssid(wpa[117]) # str.encode("Sunrise_2.4GHz_DD4B90")
-flag        = a2b_hex("7fd0bc061552217e942d19c6686f1598")
-MAC_AP      = a2b_hex("90:dd:5d:95:bc:14".replace(':', ''))
-MAC_STA     = a2b_hex("90:4d:4a:dd:4b:94".replace(':', ''))
+ssid        = helpers.find_ssid(wpa) # str.encode("Sunrise_2.4GHz_DD4B90")
+flag        = a2b_hex(helpers.find_pmkid(wpa)) # a2b_hex("7fd0bc061552217e942d19c6686f1598")
+MAC_AP      = a2b_hex(helpers.get_beacon_addr(wpa).replace(':', '')) # a2b_hex("90:dd:5d:95:bc:14".replace(':', ''))
+MAC_STA     = a2b_hex(helpers.get_client_addr(wpa).replace(':', '')) # a2b_hex("90:4d:4a:dd:4b:94".replace(':', ''))
+
+print(f"SSID : {ssid}")
+print(f"MAC_AP : {MAC_AP}")
+print(f"MAC_STA : {MAC_STA}")
+print("flag : ", flag)
 
 
 def check(k):
