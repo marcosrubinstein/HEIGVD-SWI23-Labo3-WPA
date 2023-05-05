@@ -12,7 +12,7 @@ __version__ = "1.0"
 __email__ = "pascal.perrenoud@heig-vd.ch, hugo.jeanneret@heig-vd.ch"
 __status__ = "Prototype"
 
-from scapy.all import Dot11Beacon, Dot11, EAPOL, raw, RadioTap
+from scapy.all import Dot11Beacon, Dot11, EAPOL, raw, RadioTap, Dot11Elt
 
 
 def find_ssid(packets):
@@ -53,9 +53,11 @@ def get_mic(packets):
         if RadioTap in packet and packet[RadioTap].present.MCS and Dot11 in packet and packet[Dot11].FCfield == 1 and packet[Dot11].SC == 16:
             return packet[EAPOL].load[77:93]
 
-def get_pmkid(packet):
+def get_pmkid(packets):
     for packet in packets:
-        if packet.haslayer(Dot11Elt) and packet[Dot11Elt].ID == 48:
+        if Dot11Elt in packet and packet[Dot11Elt].ID == 48:
             # Le champ Dot11Elt.ID 48 correspond à RSN IE
-            pmkid = packet[Dot11Elt].info[16:32]  # Le PMKID est situé dans les octets 16 à 32 du champ info de RSN IE
-            print(f"PMKID: {pmkid.hex()}")
+            print("PMKID : ", packet[Dot11Elt].info[16:32])
+            return packet[Dot11Elt].info[16:32]  # Le PMKID est situé dans les octets 16 à 32 du champ info de RSN IE
+    print("PMKID non trouvé")
+    return None
