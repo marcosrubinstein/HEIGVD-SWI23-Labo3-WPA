@@ -61,3 +61,18 @@ def get_pmkid(packets):
             return packet[Dot11Elt].info[16:32]  # Le PMKID est situé dans les octets 16 à 32 du champ info de RSN IE
     print("PMKID non trouvé")
     return None
+
+def get_pmkid2(packets):
+    for packet in packets:
+        if packet.haslayer(Dot11Elt) and packet[Dot11Elt].ID == 221:
+            # Le champ Dot11Elt.ID 221 correspond à Vendor Specific
+            # Vérification si le champ Vendor Specific contient RSN IE
+            info = packet[Dot11Elt].info
+            if info[:4] == b"\x00\x50\xf2\x02":
+                # Le champ Vendor Specific contient RSN IE
+                # Extraire le PMKID des octets 20 à 36
+                pmkid = info[20:36]
+                print(f"PMKID: {pmkid.hex()}")
+                return pmkid
+    print("PMKID non trouvé")
+    return None
