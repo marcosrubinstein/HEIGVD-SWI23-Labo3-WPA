@@ -63,4 +63,4 @@ def get_pmkid(packet):
     print("PMKID non trouvé")
     return None
     '''
-    return packet.original.hex()[144:160]  # Le PMKID est situé dans les octets 16 à 32 du champ info de RSN IE
+    return packet.original.hex()[386:418]  # Le PMKID est situé à cet endroit dans le paquet
