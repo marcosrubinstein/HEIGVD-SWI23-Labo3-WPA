@@ -23,8 +23,12 @@ import hmac
 
 # Load parameters
 wpa         = rdpcap("PMKID_handshake.pcap")
+
+# Isolation de la tentative de 4-way handshake
+wpa = wpa[144:145]
+
 ssid        = helpers.find_ssid(wpa) # str.encode("Sunrise_2.4GHz_DD4B90")
-flag        = a2b_hex(helpers.get_pmkid2(wpa)) # a2b_hex("7fd0bc061552217e942d19c6686f1598")
+flag        = a2b_hex(helpers.get_pmkid(wpa[1])) # a2b_hex("7fd0bc061552217e942d19c6686f1598")
 MAC_AP      = a2b_hex(helpers.get_beacon_addr(wpa).replace(':', '')) # a2b_hex("90:dd:5d:95:bc:14".replace(':', ''))
 MAC_STA     = a2b_hex(helpers.get_client_addr(wpa).replace(':', '')) # a2b_hex("90:4d:4a:dd:4b:94".replace(':', ''))
 
@@ -32,6 +36,7 @@ print(f"SSID : {ssid}")
 print(f"MAC_AP : {MAC_AP}")
 print(f"MAC_STA : {MAC_STA}")
 print("flag : ", flag)
+
 
 
 def check(k):
