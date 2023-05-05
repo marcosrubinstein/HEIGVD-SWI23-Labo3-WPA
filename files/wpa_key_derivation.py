@@ -53,30 +53,37 @@ A           = "Pairwise key expansion"
 
 # Récupération des informations de l'AP à partir du fichier pcap
 # Previous value : "SWI"
+# Use helpers to find the SSID
 ssid        = helpers.find_ssid(wpa)
 # Previous value : a2b_hex("cebcc8fdcab7")
+# Use helpers to retrieve the address of the AP
 APmac       = a2b_hex(helpers.get_beacon_addr(wpa).replace(':', ''))
 # Previous value : a2b_hex("0013efd015bd")
+# Use helpers to retrieve the address of the STA
 Clientmac   = a2b_hex(helpers.get_client_addr(wpa).replace(':', ''))
 
 # Authenticator and Supplicant Nonces
 # Previous value : a2b_hex("90773b9a9661fee1f406e8989c912b45b029c652224e8b561417672ca7e0fd91")
+# Use helpers to retrieve the ANonce
 ANonce      = helpers.get_anonce(wpa)
 # Previous value : a2b_hex("7b3826876d14ff301aee7c1072b5e9091e21169841bce9ae8a3f24628f264577")
+# Use helpers to retrieve the SNonce
 SNonce      = helpers.get_snonce(wpa)
-
-# This is the MIC contained in the 4th frame of the 4-way handshake
-# When attacking WPA, we would compare it to our own MIC calculated using passphrases from a dictionary
-# Previous value : a2b_hex("36eef66540fa801ceee2fea9b7929b40")
-mic_to_test = helpers.find_ssid(wpa)
 
 # used in pseudo-random function
 B           = min(APmac, Clientmac) + max(APmac, Clientmac) + min(ANonce, SNonce) + max(ANonce, SNonce)
 
+# This is the MIC contained in the 4th frame of the 4-way handshake
+# When attacking WPA, we would compare it to our own MIC calculated using passphrases from a dictionary
+# Previous value : a2b_hex("36eef66540fa801ceee2fea9b7929b40")
+mic_to_test = a2b_hex("36eef66540fa801ceee2fea9b7929b40")
+
 # La seule différence avec le payload du 4-way hand-shake est que le MIC n'est pas présent, il a été remplacé par des 0
 # CF "Quelques détails importants" dans la donnée
-# Previous value : #a2b_hex("0103005f02030a0000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+# Previous value : a2b_hex("0103005f02030a0000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+# Retrieves the data from the packet
 data        = list(raw(wpa[8])[48:])
+# Set the MIC to 0 before computing the new MIC
 data[17:]   = [0]*82
 data        = bytes(data)
 
@@ -99,6 +106,7 @@ ptk = customPRF512(pmk, str.encode(A), B)
 
 # calculate MIC over EAPOL payload (Michael)- The ptk is, in fact, KCK|KEK|TK|MICK
 mic = hmac.new(ptk[0:16], data, hashlib.sha1)
+assert mic.digest()[:len(mic_to_test)] == mic_to_test, "Computed MIC doesn't match !"
 
 print("\nResults of the key expansion")
 print("=============================")
